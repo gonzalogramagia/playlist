@@ -416,7 +416,7 @@ export function MusicBrowser() {
   // ...eliminado: variables no usadas
   // Los vacíos siempre arriba, los ocupados debajo, sin reordenar los ocupados
   // ...eliminado: variable no usada
-  const isPinningDisabled = false; // Siempre se puede fijar
+  // const isPinningDisabled = false; // Siempre se puede fijar
   const emptySlotMessage =
     language === "es"
       ? "Al fijar un nuevo video musical aparecerá aquí"
@@ -596,7 +596,10 @@ export function MusicBrowser() {
               >
                 <div className="text-center">
                   <div className="text-4xl mb-3 text-neutral-400">
-                    1️⃣ <span role="img" aria-label="cd">💿</span>
+                    1️⃣{" "}
+                    <span role="img" aria-label="cd">
+                      💿
+                    </span>
                   </div>
                   <p className="text-base text-neutral-500 font-medium">
                     {emptySlotMessage}
