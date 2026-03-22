@@ -85,6 +85,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       interfaceDesc: "Cambia logo, título y links por defecto",
       on: "ON",
       off: "OFF",
+      move: "Mover",
+      slot: "Slot",
+      swap: "Intercambiar",
+      empty: "Vacío",
     },
     en: {
       ariaHome: "Go to Today",
@@ -128,6 +132,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       interfaceDesc: "Change logo, title and default links",
       on: "ON",
       off: "OFF",
+      move: "Move",
+      slot: "Slot",
+      swap: "Swap",
+      empty: "Empty",
     },
   };
 

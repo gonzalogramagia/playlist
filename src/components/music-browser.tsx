@@ -540,7 +540,7 @@ export function MusicBrowser() {
               type="text"
               value="https://youtu.be/hbPoX4vjB5o"
               readOnly
-              className="w-48 px-1.5 py-0.5 border border-neutral-200 rounded text-xs bg-neutral-100 text-neutral-600 focus:bg-white transition-colors"
+              className="w-48 px-1.5 py-0.5 border border-neutral-200 rounded text-xs bg-neutral-100 text-neutral-600 focus:bg-white transition-colors hidden md:inline-block"
               style={{ fontSize: 12 }}
               onFocus={(e) => e.target.select()}
               onClick={(e) => (e.target as HTMLInputElement).select()}
@@ -605,13 +605,16 @@ export function MusicBrowser() {
                     }}
                   >
                     <option value="" disabled style={{ fontWeight: 'bold' }}>
-                      <span style={{ fontWeight: 'bold' }}>Mover</span> ➡
+                      <span style={{ fontWeight: 'bold' }}>{t("move").charAt(0).toUpperCase() + t("move").slice(1)}</span> ➡
                     </option>
-                    {[1, 2, 3].map((i) => (
-                      <option key={i} value={i}>
-                        {`Slot ${i + 1}${pinnedVideos[i] ? " (intercambiar)" : " (vacío)"}`}
-                      </option>
-                    ))}
+                    {[1, 2, 3].map((i) => {
+                      const label = `${t("slot").charAt(0).toUpperCase() + t("slot").slice(1)} ${i + 1} ${pinnedVideos[i] ? `(${t("swap").charAt(0).toUpperCase() + t("swap").slice(1)})` : `(${t("empty").charAt(0).toUpperCase() + t("empty").slice(1)})`}`;
+                      return (
+                        <option key={i} value={i}>
+                          {label}
+                        </option>
+                      );
+                    })}
                   </select>
                   <input
                     type="text"
@@ -655,9 +658,16 @@ export function MusicBrowser() {
                       💿
                     </span>
                   </div>
-                  <p className="text-base text-neutral-500 font-medium">
-                    {emptySlotMessage}
-                  </p>
+                  <span className="block text-base text-neutral-500 font-medium">
+                    {language === "es"
+                      ? "Cuando fijes un nuevo video musical"
+                      : "When you pin a new music video"}
+                  </span>
+                  <span className="block text-base text-neutral-500 font-medium mt-1">
+                    {language === "es"
+                      ? "aparecerá aquí"
+                      : "it will appear here"}
+                  </span>
                 </div>
               </div>
             )}
@@ -706,9 +716,16 @@ export function MusicBrowser() {
                           💿
                         </span>
                       </div>
-                      <p className="text-xs text-neutral-500 font-medium">
-                        {emptySlotMessage}
-                      </p>
+                      <span className="block text-xs text-neutral-500 font-medium">
+                        {language === "es"
+                          ? "Cuando fijes un nuevo video musical"
+                          : "When you pin a new music video"}
+                      </span>
+                      <span className="block text-xs text-neutral-500 font-medium mt-0.5">
+                        {language === "es"
+                          ? "aparecerá aquí"
+                          : "it will appear here"}
+                      </span>
                     </div>
                   </div>
                 );
@@ -717,11 +734,15 @@ export function MusicBrowser() {
           </div>
         </div>
 
-        {/* Mobile: principal only */}
+        {/* Mobile: principal y secundarios en fila */}
         <div className="md:hidden">
           {focusedVideo ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="aspect-video bg-gray-100 relative">
+                {/* Emoji 1️⃣💿 en la esquina superior izquierda */}
+                <span className="absolute top-2 left-2 text-2xl select-none z-10 bg-white/80 rounded px-1">
+                  1️⃣ <span role="img" aria-label="cd">💿</span>
+                </span>
                 <iframe
                   width="100%"
                   height="100%"
@@ -750,13 +771,41 @@ export function MusicBrowser() {
               className="bg-neutral-50 rounded-xl border-2 border-dashed border-neutral-300 aspect-video flex items-center justify-center cursor-pointer"
             >
               <div className="text-center">
-                <div className="text-neutral-400 text-3xl mb-2">💿</div>
-                <p className="text-neutral-500 text-sm font-medium">
-                  {emptySlotMessage}
-                </p>
+                <div className="text-neutral-400 text-3xl mb-2">
+                  1️⃣ <span role="img" aria-label="cd">💿</span>
+                </div>
+                <span className="block text-neutral-500 text-sm font-medium">
+                  {language === "es"
+                    ? "Cuando fijes un nuevo video musical"
+                    : "When you pin a new music video"}
+                </span>
+                <span className="block text-neutral-500 text-sm font-medium mt-1">
+                  {language === "es"
+                    ? "aparecerá aquí"
+                    : "it will appear here"}
+                </span>
               </div>
             </div>
           )}
+
+          {/* Secundarios en fila, solo emojis */}
+          <div className="flex flex-row justify-between items-center gap-2 mt-2">
+            {[1, 2, 3].map((slotIndex) => {
+              const slotVideo = pinnedVideos[slotIndex];
+              return (
+                <div
+                  key={slotIndex}
+                  onClick={slotVideo ? () => handleClickPinned(slotIndex) : handleClickPlaceholder}
+                  className={`flex-1 aspect-video flex flex-col items-center justify-center rounded-lg border-2 ${slotVideo ? 'border-gray-200 bg-white cursor-pointer opacity-70 hover:opacity-100 transition-opacity' : 'border-dashed border-neutral-300 bg-neutral-50 cursor-pointer'}`}
+                  style={{ minWidth: 0 }}
+                >
+                  <span className="text-2xl select-none">
+                    {['2️⃣','3️⃣','4️⃣'][slotIndex-1]} <span role="img" aria-label="cd">💿</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
