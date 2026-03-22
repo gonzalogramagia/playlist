@@ -126,7 +126,7 @@ export function MusicBrowser() {
   useEffect(() => {
     setPinnedHydrated(false);
 
-    const saved = localStorage.getItem("pinned-videos-v2");
+    const saved = localStorage.getItem(`config-pinned-videos_${mode}`);
     if (saved) {
       try {
         let parsed = JSON.parse(saved);
@@ -150,20 +150,17 @@ export function MusicBrowser() {
             arr[i] = v;
           });
           setPinnedVideos(arr);
-          localStorage.setItem("pinned-videos-v2", JSON.stringify(arr));
         } else {
           setPinnedVideos([null, null, null, null]);
-          localStorage.removeItem("pinned-videos-v2");
         }
       } catch {
         setPinnedVideos([null, null, null, null]);
-        localStorage.removeItem("pinned-videos-v2");
       }
     } else {
       setPinnedVideos([null, null, null, null]);
     }
     setPinnedHydrated(true);
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     if (!pinnedHydrated) return;
@@ -303,7 +300,6 @@ export function MusicBrowser() {
             ? null
             : v,
         );
-        localStorage.setItem("pinned-videos-v2", JSON.stringify(updated));
         return updated;
       });
       setConfirmDelete(null);
