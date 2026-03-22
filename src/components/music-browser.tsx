@@ -1,9 +1,4 @@
-import {
-  useState,
-  useMemo,
-  useEffect,
-  useRef,
-} from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useVideos, Video } from "../contexts/video-context";
 import { useToast } from "../contexts/toast-context";
 import { useLanguage } from "../contexts/language-context";
@@ -20,6 +15,7 @@ import {
   Check,
   Play,
   Pin,
+  ShieldCheck,
 } from "lucide-react";
 import {
   DndContext,
@@ -36,11 +32,18 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-function SortableVideoItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled: boolean }) {
+function SortableVideoItem({
+  id,
+  children,
+  disabled,
+}: {
+  id: string;
+  children: React.ReactNode;
+  disabled: boolean;
+}) {
   const {
     attributes,
     listeners,
@@ -84,7 +87,17 @@ export function MusicBrowser() {
     undefined,
   );
   const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  // Doble confirmación: 0 = nada, 1 = primer check, 2 = segundo check
+  const [confirmDelete, setConfirmDelete] = useState<{
+    id: string;
+    step: 1 | 2 | 3;
+  } | null>(null);
+  const confirmDeleteTimeout = useRef<NodeJS.Timeout | null>(null);
+  // Triple confirmación para eliminar video fijado
+  const [confirmRemovePinned, setConfirmRemovePinned] = useState<
+    1 | 2 | 3 | null
+  >(null);
+  const confirmRemovePinnedTimeout = useRef<NodeJS.Timeout | null>(null);
   const [hiddenTags, setHiddenTags] = useState<string[]>([]);
   const [playlistUrl, setPlaylistUrl] = useState(
     "https://youtube.com/playlist?list=PL-0_mv1k_D3IR4LDICAe3TZH4xqCX9xsr",
@@ -256,13 +269,46 @@ export function MusicBrowser() {
     setIsFormOpen(true);
   };
 
+  // Elimina el video también de los pinnedVideos y localStorage
   const handleDelete = (id: string) => {
-    if (confirmDeleteId === id) {
+    if (!confirmDelete || confirmDelete.id !== id) {
+      setConfirmDelete({ id, step: 1 });
+      if (confirmDeleteTimeout.current)
+        clearTimeout(confirmDeleteTimeout.current);
+      confirmDeleteTimeout.current = setTimeout(
+        () => setConfirmDelete(null),
+        1500,
+      );
+    } else if (confirmDelete.step === 1) {
+      setConfirmDelete({ id, step: 2 });
+      if (confirmDeleteTimeout.current)
+        clearTimeout(confirmDeleteTimeout.current);
+      confirmDeleteTimeout.current = setTimeout(
+        () => setConfirmDelete(null),
+        1500,
+      );
+    } else if (confirmDelete.step === 2) {
+      setConfirmDelete({ id, step: 3 });
+      if (confirmDeleteTimeout.current)
+        clearTimeout(confirmDeleteTimeout.current);
+      confirmDeleteTimeout.current = setTimeout(
+        () => setConfirmDelete(null),
+        1500,
+      );
+    } else if (confirmDelete.step === 3) {
       deleteVideo(id);
-      setConfirmDeleteId(null);
-    } else {
-      setConfirmDeleteId(id);
-      setTimeout(() => setConfirmDeleteId(null), 3000);
+      setPinnedVideos((prev) => {
+        const updated = prev.map((v) =>
+          v && v.url && videos.find((vid) => vid.id === id && vid.url === v.url)
+            ? null
+            : v,
+        );
+        localStorage.setItem("pinned-videos-v2", JSON.stringify(updated));
+        return updated;
+      });
+      setConfirmDelete(null);
+      if (confirmDeleteTimeout.current)
+        clearTimeout(confirmDeleteTimeout.current);
     }
   };
 
@@ -567,9 +613,55 @@ export function MusicBrowser() {
                   />
                 </div>
                 <div className="p-5 flex items-center justify-between bg-white gap-3">
+                  {/* Botón de eliminar */}
+                  <button
+                    onClick={() => {
+                      const isEdited =
+                        focusedEditUrl !== "" &&
+                        focusedEditUrl !== focusedVideo.url;
+                      if (isEdited) {
+                        handleFocusedUrlSubmit(focusIndex, focusedVideo.url);
+                      } else {
+                        // doble confirmación visual
+                        if (!confirmRemovePinned) {
+                          setConfirmRemovePinned(1);
+                          if (confirmRemovePinnedTimeout.current)
+                            clearTimeout(confirmRemovePinnedTimeout.current);
+                          confirmRemovePinnedTimeout.current = setTimeout(
+                            () => setConfirmRemovePinned(null),
+                            1500,
+                          );
+                        } else if (confirmRemovePinned === 1) {
+                          // Eliminar
+                          const next = [...pinnedVideos];
+                          next[focusIndex] = null;
+                          setPinnedVideos(next);
+                          setFocusedEditUrl("");
+                          setConfirmRemovePinned(null);
+                          if (confirmRemovePinnedTimeout.current)
+                            clearTimeout(confirmRemovePinnedTimeout.current);
+                        }
+                      }
+                    }}
+                    className={`p-2 rounded-full transition-all cursor-pointer flex-shrink-0 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700`}
+                  >
+                    {confirmRemovePinned === 1 ? (
+                      <Check size={18} style={{ opacity: 0.7 }} />
+                    ) : (
+                      <X size={18} />
+                    )}
+                  </button>
+                  <input
+                    type="text"
+                    value={
+                      focusedEditUrl === "" ? focusedVideo.url : focusedEditUrl
+                    }
+                    onChange={(e) => setFocusedEditUrl(e.target.value)}
+                    className="text-gray-600 text-sm flex-1 bg-gray-50 px-3 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all"
+                  />
                   {/* Selector para mover/intercambiar el video principal */}
                   <select
-                    className="mr-2 pl-1 pr-1 py-2 rounded border border-gray-300 bg-gray-50 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all appearance-none relative cursor-pointer"
+                    className="ml-2 pl-1 pr-1 py-2 rounded border border-gray-300 bg-gray-50 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all appearance-none relative cursor-pointer"
                     style={{
                       backgroundImage:
                         "url('data:image/svg+xml;utf8,<svg fill=\'none\' stroke=\'%23666\' stroke-width=\'2\' viewBox=\'0 0 24 24\' xmlns=\'http://www.w3.org/2000/svg\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19 9l-7 7-7-7\'></path></svg>')",
@@ -604,8 +696,11 @@ export function MusicBrowser() {
                       e.target.value = ""; // Resetear selector
                     }}
                   >
-                    <option value="" disabled style={{ fontWeight: 'bold' }}>
-                      <span style={{ fontWeight: 'bold' }}>{t("move").charAt(0).toUpperCase() + t("move").slice(1)}</span> ➡
+                    <option value="" disabled style={{ fontWeight: "bold" }}>
+                      <span style={{ fontWeight: "bold" }}>
+                        {t("move").charAt(0).toUpperCase() + t("move").slice(1)}
+                      </span>{" "}
+                      ➡
                     </option>
                     {[1, 2, 3].map((i) => {
                       const label = `${t("slot").charAt(0).toUpperCase() + t("slot").slice(1)} ${i + 1} ${pinnedVideos[i] ? `(${t("swap").charAt(0).toUpperCase() + t("swap").slice(1)})` : `(${t("empty").charAt(0).toUpperCase() + t("empty").slice(1)})`}`;
@@ -616,34 +711,6 @@ export function MusicBrowser() {
                       );
                     })}
                   </select>
-                  <input
-                    type="text"
-                    value={
-                      focusedEditUrl === "" ? focusedVideo.url : focusedEditUrl
-                    }
-                    onChange={(e) => setFocusedEditUrl(e.target.value)}
-                    className="text-gray-600 text-sm flex-1 bg-gray-50 px-3 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all"
-                  />
-                  <button
-                    onClick={() => {
-                      const isEdited =
-                        focusedEditUrl !== "" &&
-                        focusedEditUrl !== focusedVideo.url;
-                      if (isEdited) {
-                        handleFocusedUrlSubmit(focusIndex, focusedVideo.url);
-                      } else {
-                        handleRemoveFocusedVideo();
-                      }
-                    }}
-                    className={`p-2 rounded-full transition-all cursor-pointer flex-shrink-0 ${focusedEditUrl === "" || focusedEditUrl === focusedVideo.url ? "bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700" : "bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700"}`}
-                  >
-                    {focusedEditUrl === "" ||
-                    focusedEditUrl === focusedVideo.url ? (
-                      <X size={18} />
-                    ) : (
-                      <Check size={18} />
-                    )}
-                  </button>
                 </div>
               </div>
             ) : (
@@ -741,7 +808,10 @@ export function MusicBrowser() {
               <div className="aspect-video bg-gray-100 relative">
                 {/* Emoji 1️⃣💿 en la esquina superior izquierda */}
                 <span className="absolute top-2 left-2 text-2xl select-none z-10 bg-white/80 rounded px-1">
-                  1️⃣ <span role="img" aria-label="cd">💿</span>
+                  1️⃣{" "}
+                  <span role="img" aria-label="cd">
+                    💿
+                  </span>
                 </span>
                 <iframe
                   width="100%"
@@ -772,7 +842,10 @@ export function MusicBrowser() {
             >
               <div className="text-center">
                 <div className="text-neutral-400 text-3xl mb-2">
-                  1️⃣ <span role="img" aria-label="cd">💿</span>
+                  1️⃣{" "}
+                  <span role="img" aria-label="cd">
+                    💿
+                  </span>
                 </div>
                 <span className="block text-neutral-500 text-sm font-medium">
                   {language === "es"
@@ -780,9 +853,7 @@ export function MusicBrowser() {
                     : "When you pin a new music video"}
                 </span>
                 <span className="block text-neutral-500 text-sm font-medium mt-1">
-                  {language === "es"
-                    ? "aparecerá aquí"
-                    : "it will appear here"}
+                  {language === "es" ? "aparecerá aquí" : "it will appear here"}
                 </span>
               </div>
             </div>
@@ -795,12 +866,19 @@ export function MusicBrowser() {
               return (
                 <div
                   key={slotIndex}
-                  onClick={slotVideo ? () => handleClickPinned(slotIndex) : handleClickPlaceholder}
-                  className={`flex-1 aspect-video flex flex-col items-center justify-center rounded-lg border-2 ${slotVideo ? 'border-gray-200 bg-white cursor-pointer opacity-70 hover:opacity-100 transition-opacity' : 'border-dashed border-neutral-300 bg-neutral-50 cursor-pointer'}`}
+                  onClick={
+                    slotVideo
+                      ? () => handleClickPinned(slotIndex)
+                      : handleClickPlaceholder
+                  }
+                  className={`flex-1 aspect-video flex flex-col items-center justify-center rounded-lg border-2 ${slotVideo ? "border-gray-200 bg-white cursor-pointer opacity-70 hover:opacity-100 transition-opacity" : "border-dashed border-neutral-300 bg-neutral-50 cursor-pointer"}`}
                   style={{ minWidth: 0 }}
                 >
                   <span className="text-2xl select-none">
-                    {['2️⃣','3️⃣','4️⃣'][slotIndex-1]} <span role="img" aria-label="cd">💿</span>
+                    {["2️⃣", "3️⃣", "4️⃣"][slotIndex - 1]}{" "}
+                    <span role="img" aria-label="cd">
+                      💿
+                    </span>
                   </span>
                 </div>
               );
@@ -1023,18 +1101,26 @@ export function MusicBrowser() {
                             handleDelete(video.id);
                           }}
                           className={`p-1.5 bg-gray-100 rounded-full transition-all cursor-pointer ${
-                            confirmDeleteId === video.id
-                              ? "text-red-600 bg-red-50 hover:bg-red-100"
+                            confirmDelete && confirmDelete.id === video.id
+                              ? "text-red-600 bg-red-50 hover:bg-red-100 animate-pulse"
                               : "text-neutral-600 hover:text-red-600 hover:bg-red-50"
                           }`}
                           title={
-                            confirmDeleteId === video.id
-                              ? t("confirmDelete")
+                            confirmDelete && confirmDelete.id === video.id
+                              ? confirmDelete.step === 3
+                                ? t("confirmDelete") + " (final)"
+                                : t("confirmDelete")
                               : t("delete")
                           }
                         >
-                          {confirmDeleteId === video.id ? (
-                            <Check size={12} />
+                          {confirmDelete && confirmDelete.id === video.id ? (
+                            confirmDelete.step === 1 ? (
+                              <Check size={12} style={{ opacity: 0.7 }} />
+                            ) : confirmDelete.step === 2 ? (
+                              <ShieldCheck size={12} style={{ opacity: 1 }} />
+                            ) : (
+                              <Check size={12} style={{ opacity: 1 }} />
+                            )
                           ) : (
                             <Trash2 size={12} />
                           )}
