@@ -1,462 +1,918 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useVideos, Video } from "../contexts/video-context";
 import { useToast } from "../contexts/toast-context";
 import { useLanguage } from "../contexts/language-context";
 import { VideoForm } from "./video-form";
 import VideoPlayerModal from "./VideoPlayerModal";
-import { Search, SearchX, Plus, Pencil, Trash2, Hash, X, Check, Play } from "lucide-react";
-import { ModeSwitch } from "./mode-switch";
+import {
+  Search,
+  SearchX,
+  Plus,
+  Pencil,
+  Trash2,
+  Hash,
+  X,
+  Check,
+  Play,
+  Pin,
+} from "lucide-react";
 
 import {
-    DndContext,
-    closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-    DragEndEvent
-} from '@dnd-kit/core';
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
 import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    useSortable,
-    rectSortingStrategy
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-function SortableVideoItem({ id, children, disabled }: { id: string, children: React.ReactNode, disabled: boolean }) {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging
-    } = useSortable({ id, disabled });
+function SortableVideoItem({
+  id,
+  children,
+  disabled,
+}: {
+  id: string;
+  children: React.ReactNode;
+  disabled: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled });
 
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 50 : 'auto',
-        opacity: isDragging ? 0.5 : 1,
-        position: 'relative' as const,
-        touchAction: 'none'
-    };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : "auto",
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative" as const,
+    touchAction: "none",
+  };
 
-    return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            {...attributes}
-            {...listeners}
-            className={`group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow relative ${!disabled ? 'cursor-grab active:cursor-grabbing' : ''}`}
-        >
-            {children}
-        </div>
-    );
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow relative ${!disabled ? "cursor-grab active:cursor-grabbing" : ""}`}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function MusicBrowser() {
-    const { videos, addVideo, updateVideo, deleteVideo, reorderVideos } = useVideos();
-    const { toast } = useToast();
-    const { t, language, mode } = useLanguage();
-    const studyMode = mode === 'study';
-    const [search, setSearch] = useState("");
-    const [activeTag, setActiveTag] = useState<string | null>(null);
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingVideo, setEditingVideo] = useState<Video | undefined>(undefined);
-    const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
-    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-    const [hiddenTags, setHiddenTags] = useState<string[]>([]);
-    const [playlistUrl, setPlaylistUrl] = useState("https://youtube.com/playlist?list=PL-0_mv1k_D3IR4LDICAe3TZH4xqCX9xsr");
-    const [isMobile, setIsMobile] = useState(false);
+  const { videos, addVideo, updateVideo, deleteVideo, reorderVideos } =
+    useVideos();
+  const { toast } = useToast();
+  const { t, language, mode } = useLanguage();
+  const [search, setSearch] = useState("");
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<Video | undefined>(
+    undefined,
+  );
+  const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [hiddenTags, setHiddenTags] = useState<string[]>([]);
+  const [playlistUrl, setPlaylistUrl] = useState(
+    "https://youtube.com/playlist?list=PL-0_mv1k_D3IR4LDICAe3TZH4xqCX9xsr",
+  );
+  const [isMobile, setIsMobile] = useState(false);
+  const [pinUrl, setPinUrl] = useState("");
+  const [focusedEditUrl, setFocusedEditUrl] = useState("");
+  const [pinnedVideos, setPinnedVideos] = useState<
+    Array<{ url: string; name: string } | null>
+  >([null, null, null, null]);
+  const [focusIndex, setFocusIndex] = useState(0);
+  const [pinnedHydrated, setPinnedHydrated] = useState(false);
+  const pinUrlInputRef = useRef<HTMLInputElement>(null);
+  const defaultPinnedVideos: Array<{ url: string; name: string } | null> = [
+    {
+      url: "https://www.youtube.com/watch?v=QtKGMfeyPUE",
+      name: "Diplo - Live in Antarctica 2023 (Full Set)",
+    },
+    {
+      url: "https://www.youtube.com/watch?v=hbPoX4vjB5o",
+      name: "Zero Distractions - Chillstep Mix for Full Focus",
+    },
+    null,
+    null,
+  ];
 
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
 
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 8,
-            },
-        }),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
+  useEffect(() => {
+    setPinnedHydrated(false);
+
+    const savedPinnedVideos = localStorage.getItem(
+      `config-pinned-videos_${mode}`,
+    );
+    const savedFocusIndex = localStorage.getItem(
+      `config-pinned-focus-index_${mode}`,
     );
 
-    // Load hidden tags and playlist URL scoped by interface mode
-    useEffect(() => {
-        const savedTags = localStorage.getItem(`config-hidden-tags_${mode}`);
-        const savedUrl = localStorage.getItem(`config-playlist-url_${mode}`);
-
-        if (savedTags) {
-            try {
-                setHiddenTags(JSON.parse(savedTags));
-            } catch (e) {
-                setHiddenTags([]);
-            }
+    if (!savedPinnedVideos) {
+      setPinnedVideos(defaultPinnedVideos);
+    } else {
+      try {
+        const parsed = JSON.parse(savedPinnedVideos);
+        if (Array.isArray(parsed) && parsed.length === 4) {
+          setPinnedVideos(parsed);
+        } else if (Array.isArray(parsed) && parsed.length === 3) {
+          setPinnedVideos([...parsed, null]);
         } else {
-            setHiddenTags([]);
+          setPinnedVideos(defaultPinnedVideos);
         }
+      } catch {
+        setPinnedVideos(defaultPinnedVideos);
+      }
+    }
 
-        if (savedUrl) {
-            setPlaylistUrl(savedUrl);
-        } else {
-            // Use per-mode default playlist URL when none is saved
-            if (mode === 'study') {
-                setPlaylistUrl('https://www.youtube.com/@freecodecamp/videos');
-            } else {
-                setPlaylistUrl('https://youtube.com/playlist?list=PL-0_mv1k_D3IR4LDICAe3TZH4xqCX9xsr');
-            }
+    if (savedFocusIndex === null) {
+      setFocusIndex(0);
+    } else {
+      const parsedFocus = Number(savedFocusIndex);
+      if ([0, 1, 2, 3].includes(parsedFocus)) {
+        setFocusIndex(parsedFocus);
+      } else {
+        setFocusIndex(0);
+      }
+    }
+
+    setPinnedHydrated(true);
+  }, [mode]);
+
+  useEffect(() => {
+    if (!pinnedHydrated) return;
+    localStorage.setItem(
+      `config-pinned-videos_${mode}`,
+      JSON.stringify(pinnedVideos),
+    );
+  }, [pinnedVideos, mode, pinnedHydrated]);
+
+  useEffect(() => {
+    if (!pinnedHydrated) return;
+    localStorage.setItem(
+      `config-pinned-focus-index_${mode}`,
+      String(focusIndex),
+    );
+    setFocusedEditUrl("");
+  }, [focusIndex, mode, pinnedHydrated]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  // Load hidden tags and playlist URL scoped by interface mode
+  useEffect(() => {
+    const savedTags = localStorage.getItem(`config-hidden-tags_${mode}`);
+    const savedUrl = localStorage.getItem(`config-playlist-url_${mode}`);
+
+    if (savedTags) {
+      try {
+        setHiddenTags(JSON.parse(savedTags));
+      } catch (e) {
+        setHiddenTags([]);
+      }
+    } else {
+      setHiddenTags([]);
+    }
+
+    if (savedUrl) {
+      setPlaylistUrl(savedUrl);
+    } else {
+      setPlaylistUrl(
+        "https://youtube.com/playlist?list=PL-0_mv1k_D3IR4LDICAe3TZH4xqCX9xsr",
+      );
+    }
+  }, [mode]);
+
+  // Filter tags to exclude hidden ones
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    videos.forEach((video) => {
+      video.tags.forEach((tag) => {
+        if (!hiddenTags.includes(tag)) {
+          tags.add(tag);
         }
-    }, [mode]);
+      });
+    });
+    return Array.from(tags).sort();
+  }, [videos, hiddenTags]);
 
-    // Filter tags to exclude hidden ones
-    const allTags = useMemo(() => {
-        const tags = new Set<string>();
-        videos.forEach(video => {
-            video.tags.forEach(tag => {
-                if (!hiddenTags.includes(tag)) {
-                    tags.add(tag);
-                }
-            });
-        });
-        return Array.from(tags).sort();
-    }, [videos, hiddenTags]);
+  // Filter videos based on search, active tag, and hidden tags
+  const filteredVideos = useMemo(() => {
+    // First filter by hidden tags (hide song if all its tags are hidden? or if it matches a hidden tag?)
+    // User said "ocultar tags y sus canciones".
+    // Let's hide video if it has tags AND none of them are visible.
+    const visibleVideos = videos.filter((video) => {
+      if (video.tags.length === 0) return true; // No tags = visible
+      return video.tags.some((tag) => !hiddenTags.includes(tag));
+    });
 
-    // Filter videos based on search, active tag, and hidden tags
-    const filteredVideos = useMemo(() => {
-        // First filter by hidden tags (hide song if all its tags are hidden? or if it matches a hidden tag?)
-        // User said "ocultar tags y sus canciones".
-        // Let's hide video if it has tags AND none of them are visible.
-        const visibleVideos = videos.filter(video => {
-            if (video.tags.length === 0) return true; // No tags = visible
-            return video.tags.some(tag => !hiddenTags.includes(tag));
-        });
+    if (activeTag) {
+      return visibleVideos.filter((video) => video.tags.includes(activeTag));
+    }
 
-        if (activeTag) {
-            return visibleVideos.filter(video => video.tags.includes(activeTag));
-        }
+    if (!search.trim()) return visibleVideos;
 
-        if (!search.trim()) return visibleVideos;
+    const lowerSearch = search.toLowerCase();
+    return visibleVideos.filter(
+      (video) =>
+        video.name.toLowerCase().includes(lowerSearch) ||
+        video.tags.some((tag) => tag.toLowerCase().includes(lowerSearch)),
+    );
+  }, [videos, search, activeTag, hiddenTags]);
 
-        const lowerSearch = search.toLowerCase();
-        return visibleVideos.filter(video =>
-            video.name.toLowerCase().includes(lowerSearch) ||
-            video.tags.some(tag => tag.toLowerCase().includes(lowerSearch))
+  // Reset active tag if it becomes hidden
+  useEffect(() => {
+    if (activeTag && hiddenTags.includes(activeTag)) {
+      setActiveTag(null);
+    }
+  }, [hiddenTags, activeTag]);
+
+  const handleEdit = (video: Video) => {
+    setEditingVideo(video);
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirmDeleteId === id) {
+      deleteVideo(id);
+      setConfirmDeleteId(null);
+    } else {
+      setConfirmDeleteId(id);
+      setTimeout(() => setConfirmDeleteId(null), 3000);
+    }
+  };
+
+  const handleFormSubmit = (videoData: Omit<Video, "id" | "embedUrl">) => {
+    if (editingVideo) {
+      updateVideo(editingVideo.id, videoData);
+      toast(t("toastSongUpdated"), "success");
+    } else {
+      addVideo(videoData);
+      toast(t("toastSongAdded"), "success");
+    }
+  };
+
+  const handleUnpinTag = () => setActiveTag(null);
+
+  const getTagName = (tag: string) => {
+    const key = "tag_" + tag;
+    const translation = t(key);
+    return translation === key ? tag : translation;
+  };
+
+  const extractYoutubeId = (url: string): string | null => {
+    try {
+      if (!url) return null;
+      const urlObj = new URL(url.startsWith("http") ? url : "https://" + url);
+      if (
+        urlObj.hostname.includes("youtube.com") ||
+        urlObj.hostname.includes("youtu.be")
+      ) {
+        return (
+          urlObj.searchParams.get("v") ||
+          urlObj.pathname.split("/").pop() ||
+          null
         );
-    }, [videos, search, activeTag, hiddenTags]);
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
 
-    // Reset active tag if it becomes hidden
-    useEffect(() => {
-        if (activeTag && hiddenTags.includes(activeTag)) {
-            setActiveTag(null);
-        }
-    }, [hiddenTags, activeTag]);
+  const handlePinUrlSubmit = () => {
+    if (pinnedVideos.every((video) => video !== null)) {
+      return;
+    }
 
-    const handleEdit = (video: Video) => {
-        setEditingVideo(video);
-        setIsFormOpen(true);
-    };
+    if (pinUrl.trim() === "") {
+      return;
+    }
 
-    const handleDelete = (id: string) => {
-        if (confirmDeleteId === id) {
-            deleteVideo(id);
-            setConfirmDeleteId(null);
-        } else {
-            setConfirmDeleteId(id);
-            setTimeout(() => setConfirmDeleteId(null), 3000);
-        }
-    };
+    const videoId = extractYoutubeId(pinUrl);
+    if (videoId) {
+      const alreadyPinned = pinnedVideos.some((video) => {
+        if (!video) return false;
+        return extractYoutubeId(video.url) === videoId;
+      });
 
-    const handleFormSubmit = (videoData: Omit<Video, 'id' | 'embedUrl'>) => {
-        if (editingVideo) {
-            updateVideo(editingVideo.id, videoData);
-            toast(t('toastSongUpdated'), 'success');
-        } else {
-            addVideo(videoData);
-            toast(t('toastSongAdded'), 'success');
-        }
-    };
+      if (alreadyPinned) {
+        toast(
+          language === "es"
+            ? "Ese video ya está agregado"
+            : "This video is already added",
+          "error",
+        );
+        return;
+      }
 
-    const handleUnpinTag = () => setActiveTag(null);
+      const newVideo = {
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        name: "Temporary Video",
+      };
 
-    const getTagName = (tag: string) => {
-        const key = 'tag_' + tag;
-        const translation = t(key);
-        return translation === key ? tag : translation;
-    };
+      // Siempre llenar el slot vacío de mayor índice (más abajo visualmente)
+      const lastEmpty = [3, 2, 1].find((index) => pinnedVideos[index] === null);
+      const targetIndex = lastEmpty;
+      if (targetIndex === undefined) return;
+      setPinnedVideos((prev) => {
+        const next = [...prev];
+        next[targetIndex] = newVideo;
+        return next;
+      });
+      setPinUrl("");
+    } else {
+      toast(
+        language === "es"
+          ? "❌ Link de YouTube inválido"
+          : "❌ Invalid YouTube link",
+        "error",
+      );
+    }
+  };
 
-    const isReorderingAllowed = !search.trim() && !activeTag && hiddenTags.length === 0 && !isMobile;
+  const handleFocusedUrlSubmit = (slotIndex: number, currentUrl: string) => {
+    // Si el campo está vacío, eliminar el video
+    if (focusedEditUrl.trim() === "") {
+      setPinnedVideos((prev) => {
+        const next = [...prev];
+        next[slotIndex] = null;
+        return next;
+      });
+      setFocusedEditUrl("");
+      return;
+    }
+    if (focusedEditUrl === currentUrl) {
+      return;
+    }
 
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
+    const videoId = extractYoutubeId(focusedEditUrl);
+    if (!videoId) {
+      toast(
+        language === "es"
+          ? "❌ Link de YouTube inválido"
+          : "❌ Invalid YouTube link",
+        "error",
+      );
+      return;
+    }
 
-        if (over && active.id !== over.id) {
-            const oldIndex = videos.findIndex((v) => v.id === active.id);
-            const newIndex = videos.findIndex((v) => v.id === over.id);
+    const alreadyPinnedInAnotherSlot = pinnedVideos.some((video, index) => {
+      if (!video || index === slotIndex) return false;
+      return extractYoutubeId(video.url) === videoId;
+    });
 
-            if (oldIndex !== -1 && newIndex !== -1) {
-                reorderVideos(arrayMove(videos, oldIndex, newIndex));
+    if (alreadyPinnedInAnotherSlot) {
+      toast(
+        language === "es"
+          ? "Ese video ya está agregado"
+          : "This video is already added",
+        "error",
+      );
+      return;
+    }
+
+    setPinnedVideos((prev) => {
+      const next = [...prev];
+      next[slotIndex] = {
+        ...(next[slotIndex] || { name: "Temporary Video" }),
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        name: next[slotIndex]?.name || "Temporary Video",
+      };
+      return next;
+    });
+
+    setFocusedEditUrl("");
+  };
+
+  const handleClickPinned = (index: number) => {
+    setFocusIndex(index);
+  };
+
+  const handleClickPlaceholder = () => {
+    // Only focus the input, do not change the main focus
+    setTimeout(() => {
+      pinUrlInputRef.current?.focus();
+    }, 0);
+  };
+
+  const handleRemoveFocusedVideo = () => {
+    const next = [...pinnedVideos];
+    next[focusIndex] = null;
+
+    setPinnedVideos(next);
+    setFocusedEditUrl("");
+  };
+
+  const focusedVideo = pinnedVideos[focusIndex];
+  // ...eliminado: variable no usada
+  // ...eliminado: variables no usadas
+  // Los vacíos siempre arriba, los ocupados debajo, sin reordenar los ocupados
+  // ...eliminado: variable no usada
+  const isPinningDisabled = pinnedVideos.every((video) => video !== null);
+  const emptySlotMessage =
+    language === "es"
+      ? "Al fijar un nuevo video musical aparecerá aquí"
+      : "When you pin a new musical video, it will appear here";
+
+  const isReorderingAllowed =
+    !search.trim() && !activeTag && hiddenTags.length === 0 && !isMobile;
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = videos.findIndex((v) => v.id === active.id);
+      const newIndex = videos.findIndex((v) => v.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        reorderVideos(arrayMove(videos, oldIndex, newIndex));
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-4 md:space-y-8">
+      <>
+        <div className="flex flex-col md:flex-row items-center justify-center pt-0 pb-0 md:pt-0 md:pb-0 gap-0 md:gap-1 max-w-4xl mx-auto">
+          <img
+            src={"/dj.png"}
+            alt={"DJ"}
+            onClick={() =>
+              window.open("https://youtu.be/dQw4w9WgXcQ", "_blank")
             }
-        }
-    };
-
-    return (
-        <div className="space-y-4 md:space-y-8">
-            <div className="flex flex-col md:flex-row items-center justify-center pt-0 pb-0 md:pt-0 md:pb-0 gap-0 md:gap-1 max-w-4xl mx-auto">
-                <img
-                    src={studyMode ? '/studying.png' : '/dj.png'}
-                    alt={studyMode ? 'Studying' : 'DJ'}
-                    onClick={() => window.open('https://youtu.be/dQw4w9WgXcQ', '_blank')}
-                    /* Ajuste de márgenes negativos y condicionales según idioma. If studyMode, move slightly down and left */
-                    className={`cursor-pointer h-60 md:h-72 w-auto object-contain hover:scale-105 transition-transform duration-500 drop-shadow-2xl -mt-6 -mb-4 md:mt-0 md:mb-0 md:-mr-4 ${studyMode ? 'md:ml-4 md:translate-y-1 md:-translate-x-2' : (language === 'en' ? 'md:ml-0' : 'md:ml-16')}`}
-                    style={studyMode ? { transform: 'translate3d(-0.6rem,0.25rem,0)' } : undefined}
-                />
-                <div className="flex flex-col items-center md:items-start md:gap-0">
-                    <h1 className="mx-auto md:mx-0 md:max-w-xl text-3xl md:text-5xl font-extrabold text-center md:text-left text-neutral-900 leading-tight tracking-tight">
-                        <>
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-neutral-900 to-neutral-600 inline">
-                                {t('headline_part1')}
-                            </span>
-                            <span className={`text-[#6866D6] block ${(language === 'es' && !studyMode) ? 'md:inline' : ''}`}>
-                                {language === 'es' && !studyMode && ' '}{t('headline_part2')}
-                            </span>
-                        </>
-                    </h1>
-                    {/* Switch de modo para mobile debajo del título */}
-                    <div className="md:hidden flex items-center gap-2 mt-6 mb-0">
-                        <span className="text-sm text-neutral-600 font-medium">
-                            {language === 'en' ? 'Switch mode' : 'Cambiar modo'}
-                        </span>
-                        <ModeSwitch />
-                    </div>
-                </div>
-            </div>
-            {/* Sticky Header */}
-            <div className="sticky top-0 z-10 bg-white py-2 md:py-4 border-b border-neutral-200 space-y-3">
-                <div className="flex items-center gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-5 h-5" />
-                        <input
-                            type="text"
-                            placeholder={t('searchPlaceholder')}
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            onFocus={() => {
-                                if (activeTag) {
-                                    handleUnpinTag();
-                                }
-                            }}
-                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-300 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all text-neutral-900"
-                        />
-                    </div>
-                    <div className="hidden md:block">
-                        <ModeSwitch />
-                    </div>
-                </div>
-
-                {activeTag && (
-                    <div className="flex items-center justify-center md:justify-start cursor-pointer pb-2" onClick={() => setActiveTag(null)}>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#6866D6]/10 text-[#6866D6] rounded-full text-xs font-medium hover:bg-[#6866D6]/20 transition-colors">
-                            <Hash className="w-3 h-3.5" />
-                            {getTagName(activeTag)}
-                            <button className="p-0 rounded-full transition-colors cursor-pointer">
-                                <X className="w-3.5 h-3.5" />
-                            </button>
-                        </span>
-                    </div>
-                )}
-
-                {/* Tag Cloud */}
-                {allTags.length > 0 && !activeTag && (
-                    <div className="flex flex-wrap gap-2 justify-center md:justify-start pb-2">
-                        {allTags.map(tag => (
-                            <button
-                                key={tag}
-                                onClick={() => setActiveTag(tag)}
-                                className="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded text-xs transition-colors cursor-pointer"
-                            >
-                                <Hash className="w-3 h-3" />
-                                {getTagName(tag)}
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Video Grid */}
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-            >
-                <SortableContext
-                    items={filteredVideos.map(v => v.id)}
-                    strategy={rectSortingStrategy}
-                    disabled={!isReorderingAllowed}
+            className={`cursor-pointer h-60 md:h-72 w-auto object-contain hover:scale-105 transition-transform duration-500 drop-shadow-2xl -mt-6 -mb-4 md:mt-0 md:mb-0 md:-mr-4 ${language === "en" ? "md:ml-0" : "md:ml-16"}`}
+          />
+          <div className="flex flex-col items-center md:items-start md:gap-0">
+            <h1 className="mx-auto md:mx-0 md:max-w-xl text-3xl md:text-5xl font-extrabold text-center md:text-left text-neutral-900 leading-tight tracking-tight">
+              <>
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-neutral-900 to-neutral-600 inline">
+                  {t("headline_part1")}
+                </span>
+                <span
+                  className={`text-[#6866D6] block ${language === "es" ? "md:inline" : ""}`}
                 >
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-20">
-                        {/* Add Video Button - Always First */}
-                        <button
-                            onClick={() => {
-                                setEditingVideo(undefined);
-                                setIsFormOpen(true);
-                            }}
-                            className={`flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl hover:border-[#6866D6] hover:bg-[#6866D6]/10 transition-all group cursor-pointer ${filteredVideos.length === 0
-                                ? 'md:col-start-2 min-h-[240px]'
-                                : 'min-h-[220px]'
-                                }`}
-                        >
-                            <div className="h-12 w-12 bg-[#6866D6]/20 text-[#6866D6] rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm">
-                                <Plus className="w-6 h-6" />
-                            </div>
-                            <span className="font-medium text-gray-600 group-hover:text-[#6866D6] text-sm">{t('addSong')}</span>
-                        </button>
-
-                        {filteredVideos.length === 0 && !isFormOpen && (
-                            <div className="col-span-full flex flex-col items-center justify-center py-6 text-neutral-500 space-y-2">
-                                <div className="bg-neutral-100 p-3 rounded-full mb-2">
-                                    <SearchX className="w-6 h-6 text-neutral-400" />
-                                </div>
-                                {search.trim() ? (
-                                    <>
-                                        <p className="font-bold text-neutral-900 dark:text-neutral-100">{t('noResultsFor')}</p>
-                                        <p className="text-lg">"{search}"</p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <p className="font-bold text-neutral-900">{t('noSongsFound')}</p>
-                                    </>
-                                )}
-                                <a
-                                    href={playlistUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block mt-12 mb-0 text-center mx-auto max-w-lg !text-[#6866D6] hover:!text-[#5856b3] transition-colors group cursor-pointer"
-                                >
-                                    <p className="text-base group-hover:underline dark:text-white">
-                                        {t('moreSongsIn')}{" "}
-                                        <span className="break-all">
-                                            {playlistUrl}
-                                        </span>
-                                    </p>
-                                </a>
-                            </div>
-                        )}
-
-                        {filteredVideos.map((video) => (
-                            <SortableVideoItem
-                                key={video.id}
-                                id={video.id}
-                                disabled={!isReorderingAllowed}
-                            >
-                                <div className="aspect-video bg-gray-100 relative group-hover:scale-105 transition-transform duration-300">
-                                    {video.url ? (
-                                        <div
-                                            onClick={() => setPlayingVideo(video)}
-                                            className="block w-full h-full relative cursor-pointer"
-                                        >
-                                            <img
-                                                src={`https://img.youtube.com/vi/${video.url.split('v=')[1]?.split('&')[0] || video.url.split('youtu.be/')[1]?.split('?')[0]}/hqdefault.jpg`}
-                                                alt={video.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors flex items-center justify-center">
-                                                <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-all duration-300">
-                                                    <Play className="w-7 h-7 text-white fill-current ml-1" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                            {t('previewNotAvailable')}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="p-4">
-                                    <h3
-                                        className="font-semibold text-gray-900 truncate text-sm leading-tight group-hover:text-[#6866D6] transition-colors cursor-pointer"
-                                        title={video.name}
-                                        onClick={() => setPlayingVideo(video)}
-                                    >
-                                        {video.name}
-                                    </h3>
-                                    <div className="flex justify-between items-end mt-2 gap-2">
-                                        <div className="flex flex-wrap gap-1">
-                                            {video.tags.filter(t => !hiddenTags.includes(t)).map(tag => (
-                                                <span
-                                                    key={tag}
-                                                    onClick={() => setActiveTag(tag)}
-                                                    className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 cursor-pointer transition-colors relative z-20"
-                                                >
-                                                    #{getTagName(tag)}
-                                                </span>
-                                            ))}
-                                        </div>
-
-                                        {/* Action Buttons */}
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shrink-0 relative z-20">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleEdit(video);
-                                                }}
-                                                className="p-1.5 bg-gray-100 hover:bg-[#6866D6]/10 text-neutral-600 hover:text-[#6866D6] rounded-full transition-all cursor-pointer"
-                                                title={t('edit')}
-                                            >
-                                                <Pencil size={12} />
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDelete(video.id);
-                                                }}
-                                                className={`p-1.5 bg-gray-100 rounded-full transition-all cursor-pointer ${confirmDeleteId === video.id
-                                                    ? "text-red-600 bg-red-50 hover:bg-red-100"
-                                                    : "text-neutral-600 hover:text-red-600 hover:bg-red-50"
-                                                    }`}
-                                                title={confirmDeleteId === video.id ? t('confirmDelete') : t('delete')}
-                                            >
-                                                {confirmDeleteId === video.id ? <Check size={12} /> : <Trash2 size={12} />}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </SortableVideoItem>
-                        ))}
-                    </div>
-                </SortableContext>
-            </DndContext>
-
-            {/* Video Form Modal */}
-            <VideoForm
-                isOpen={isFormOpen}
-                onClose={() => {
-                    setIsFormOpen(false);
-                    setEditingVideo(undefined);
-                }}
-                onSubmit={handleFormSubmit}
-                initialData={editingVideo}
-                initialName={search}
-            />
-
-            {playingVideo && (
-                <VideoPlayerModal
-                    video={playingVideo}
-                    onClose={() => setPlayingVideo(null)}
-                />
-            )}
+                  {language === "es" && " "}
+                  {t("headline_part2")}
+                </span>
+              </>
+            </h1>
+          </div>
         </div>
-    );
+
+        <div className="mb-6">
+          <div className="flex gap-2">
+            <input
+              ref={pinUrlInputRef}
+              type="text"
+              placeholder={
+                language === "es"
+                  ? "Pega un link de YouTube (ej: youtube.com/watch?v=...)"
+                  : "Paste a YouTube link (e.g., youtube.com/watch?v=...)"
+              }
+              value={pinUrl}
+              onChange={(e) => setPinUrl(e.target.value)}
+              disabled={isPinningDisabled}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  handlePinUrlSubmit();
+                }
+              }}
+              className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all text-neutral-900 placeholder-neutral-500 font-medium ${isPinningDisabled ? "bg-neutral-100 border-neutral-300 cursor-not-allowed opacity-70" : "bg-[#6866D6]/5 border-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 focus:border-[#6866D6]"}`}
+            />
+            <button
+              onClick={handlePinUrlSubmit}
+              disabled={isPinningDisabled}
+              className={`px-6 py-3 text-white rounded-lg font-bold flex items-center gap-2 shadow-md transition-all ${isPinningDisabled ? "bg-neutral-400 cursor-not-allowed opacity-70" : "bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer"}`}
+            >
+              <Pin className="w-5 h-5" />
+              {language === "es" ? "Fijar" : "Pin"}
+            </button>
+          </div>
+        </div>
+      </>
+
+      <div className="mb-6">
+        {/* Desktop: main slot + 3 stacked secondary slots */}
+        <div className="hidden md:flex items-stretch gap-6">
+          <div className="flex-1">
+            {focusedVideo ? (
+              <div className="bg-white border-2 border-gray-200 overflow-hidden rounded-2xl shadow-lg">
+                <div className="h-96 bg-gray-100 relative">
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    src={`https://www.youtube.com/embed/${focusedVideo.url.split("v=")[1]?.split("&")[0]}?modestbranding=1`}
+                    frameBorder="0"
+                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                </div>
+                <div className="p-5 flex items-center justify-between bg-white gap-3">
+                  <input
+                    type="text"
+                    value={
+                      focusedEditUrl === "" ? focusedVideo.url : focusedEditUrl
+                    }
+                    onChange={(e) => setFocusedEditUrl(e.target.value)}
+                    className="text-gray-600 text-sm flex-1 bg-gray-50 px-3 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all"
+                  />
+                  <button
+                    onClick={() => {
+                      const isEdited =
+                        focusedEditUrl !== "" &&
+                        focusedEditUrl !== focusedVideo.url;
+                      if (isEdited) {
+                        handleFocusedUrlSubmit(focusIndex, focusedVideo.url);
+                      } else {
+                        handleRemoveFocusedVideo();
+                      }
+                    }}
+                    className={`p-2 rounded-full transition-all cursor-pointer flex-shrink-0 ${focusedEditUrl === "" || focusedEditUrl === focusedVideo.url ? "bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700" : "bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700"}`}
+                  >
+                    {focusedEditUrl === "" ||
+                    focusedEditUrl === focusedVideo.url ? (
+                      <X size={18} />
+                    ) : (
+                      <Check size={18} />
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={handleClickPlaceholder}
+                className="bg-neutral-50 rounded-2xl border-2 border-dashed border-neutral-300 h-[29rem] flex items-center justify-center cursor-pointer"
+              >
+                <div className="text-center">
+                  <div className="text-4xl mb-3 text-neutral-400">💿</div>
+                  <p className="text-base text-neutral-500 font-medium">
+                    {emptySlotMessage}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="relative">
+            <div className="w-64 flex flex-col gap-4 justify-end">
+              {[1, 2, 3].map((slotIndex) => {
+                const slotVideo = pinnedVideos[slotIndex];
+
+                if (slotVideo) {
+                  return (
+                    <div
+                      key={slotIndex}
+                      onClick={() => handleClickPinned(slotIndex)}
+                      className="cursor-pointer transition-opacity opacity-60 hover:opacity-95"
+                    >
+                      <div className="bg-white border border-gray-200 overflow-hidden rounded-lg shadow-sm">
+                        <div className="aspect-video bg-gray-100 relative">
+                          <iframe
+                            width="100%"
+                            height="100%"
+                            src={`https://www.youtube.com/embed/${slotVideo.url.split("v=")[1]?.split("&")[0]}?modestbranding=1`}
+                            frameBorder="0"
+                            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="w-full h-full pointer-events-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={slotIndex}
+                    onClick={handleClickPlaceholder}
+                    className="bg-neutral-50 rounded-lg border-2 border-dashed border-neutral-300 aspect-video flex items-center justify-center cursor-pointer"
+                  >
+                    <div className="text-center px-2">
+                      <div className="text-xl mb-1 text-neutral-400">💿</div>
+                      <p className="text-xs text-neutral-500 font-medium">
+                        {emptySlotMessage}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile: principal only */}
+        <div className="md:hidden">
+          {focusedVideo ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="aspect-video bg-gray-100 relative">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://www.youtube.com/embed/${focusedVideo.url.split("v=")[1]?.split("&")[0]}?modestbranding=1`}
+                  frameBorder="0"
+                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+              <div className="p-4 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900 text-sm flex-1">
+                  {focusedVideo.name}
+                </h3>
+                <button
+                  onClick={handleRemoveFocusedVideo}
+                  className="p-1.5 bg-gray-100 hover:bg-red-50 text-neutral-600 hover:text-red-600 rounded-full transition-all cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={handleClickPlaceholder}
+              className="bg-neutral-50 rounded-xl border-2 border-dashed border-neutral-300 aspect-video flex items-center justify-center cursor-pointer"
+            >
+              <div className="text-center">
+                <div className="text-neutral-400 text-3xl mb-2">💿</div>
+                <p className="text-neutral-500 text-sm font-medium">
+                  {emptySlotMessage}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Hidden: song browser section */}
+      <div className="hidden">
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder={t("searchPlaceholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onFocus={() => {
+                if (activeTag) {
+                  handleUnpinTag();
+                }
+              }}
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-300 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all text-neutral-900"
+            />
+          </div>
+        </div>
+
+        {activeTag && (
+          <div
+            className="flex items-center justify-center md:justify-start cursor-pointer pb-2"
+            onClick={() => setActiveTag(null)}
+          >
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#6866D6]/10 text-[#6866D6] rounded-full text-xs font-medium hover:bg-[#6866D6]/20 transition-colors">
+              <Hash className="w-3 h-3.5" />
+              {getTagName(activeTag)}
+              <button className="p-0 rounded-full transition-colors cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          </div>
+        )}
+
+        {/* Tag Cloud */}
+        {allTags.length > 0 && !activeTag && (
+          <div className="flex flex-wrap gap-2 justify-center md:justify-start pb-2">
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setActiveTag(tag)}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded text-xs transition-colors cursor-pointer"
+              >
+                <Hash className="w-3 h-3" />
+                {getTagName(tag)}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Hidden: song grid section */}
+      <div className="hidden">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={filteredVideos.map((v) => v.id)}
+            strategy={rectSortingStrategy}
+            disabled={!isReorderingAllowed}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-20">
+              {/* Add Video Button - Always First */}
+              <button
+                onClick={() => {
+                  setEditingVideo(undefined);
+                  setIsFormOpen(true);
+                }}
+                className={`flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl hover:border-[#6866D6] hover:bg-[#6866D6]/10 transition-all group cursor-pointer ${
+                  filteredVideos.length === 0
+                    ? "md:col-start-2 min-h-[240px]"
+                    : "min-h-[220px]"
+                }`}
+              >
+                <div className="h-12 w-12 bg-[#6866D6]/20 text-[#6866D6] rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm">
+                  <Plus className="w-6 h-6" />
+                </div>
+                <span className="font-medium text-gray-600 group-hover:text-[#6866D6] text-sm">
+                  {t("addSong")}
+                </span>
+              </button>
+
+              {filteredVideos.length === 0 && !isFormOpen && (
+                <div className="col-span-full flex flex-col items-center justify-center py-6 text-neutral-500 space-y-2">
+                  <div className="bg-neutral-100 p-3 rounded-full mb-2">
+                    <SearchX className="w-6 h-6 text-neutral-400" />
+                  </div>
+                  {search.trim() ? (
+                    <>
+                      <p className="font-bold text-neutral-900 dark:text-neutral-100">
+                        {t("noResultsFor")}
+                      </p>
+                      <p className="text-lg">"{search}"</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-bold text-neutral-900">
+                        {t("noSongsFound")}
+                      </p>
+                    </>
+                  )}
+                  <a
+                    href={playlistUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block mt-12 mb-0 text-center mx-auto max-w-lg !text-[#6866D6] hover:!text-[#5856b3] transition-colors group cursor-pointer"
+                  >
+                    <p className="text-base group-hover:underline dark:text-white">
+                      {t("moreSongsIn")}{" "}
+                      <span className="break-all">{playlistUrl}</span>
+                    </p>
+                  </a>
+                </div>
+              )}
+
+              {filteredVideos.map((video) => (
+                <SortableVideoItem
+                  key={video.id}
+                  id={video.id}
+                  disabled={!isReorderingAllowed}
+                >
+                  <div className="aspect-video bg-gray-100 relative group-hover:scale-105 transition-transform duration-300">
+                    {video.url ? (
+                      <div
+                        onClick={() => setPlayingVideo(video)}
+                        className="block w-full h-full relative cursor-pointer"
+                      >
+                        <img
+                          src={`https://img.youtube.com/vi/${video.url.split("v=")[1]?.split("&")[0] || video.url.split("youtu.be/")[1]?.split("?")[0]}/hqdefault.jpg`}
+                          alt={video.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors flex items-center justify-center">
+                          <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-all duration-300">
+                            <Play className="w-7 h-7 text-white fill-current ml-1" />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        {t("previewNotAvailable")}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-4">
+                    <h3
+                      className="font-semibold text-gray-900 truncate text-sm leading-tight group-hover:text-[#6866D6] transition-colors cursor-pointer"
+                      title={video.name}
+                      onClick={() => setPlayingVideo(video)}
+                    >
+                      {video.name}
+                    </h3>
+                    <div className="flex justify-between items-end mt-2 gap-2">
+                      <div className="flex flex-wrap gap-1">
+                        {video.tags
+                          .filter((t) => !hiddenTags.includes(t))
+                          .map((tag) => (
+                            <span
+                              key={tag}
+                              onClick={() => setActiveTag(tag)}
+                              className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 cursor-pointer transition-colors relative z-20"
+                            >
+                              #{getTagName(tag)}
+                            </span>
+                          ))}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shrink-0 relative z-20">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(video);
+                          }}
+                          className="p-1.5 bg-gray-100 hover:bg-[#6866D6]/10 text-neutral-600 hover:text-[#6866D6] rounded-full transition-all cursor-pointer"
+                          title={t("edit")}
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(video.id);
+                          }}
+                          className={`p-1.5 bg-gray-100 rounded-full transition-all cursor-pointer ${
+                            confirmDeleteId === video.id
+                              ? "text-red-600 bg-red-50 hover:bg-red-100"
+                              : "text-neutral-600 hover:text-red-600 hover:bg-red-50"
+                          }`}
+                          title={
+                            confirmDeleteId === video.id
+                              ? t("confirmDelete")
+                              : t("delete")
+                          }
+                        >
+                          {confirmDeleteId === video.id ? (
+                            <Check size={12} />
+                          ) : (
+                            <Trash2 size={12} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </SortableVideoItem>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
+
+      {/* Video Form Modal */}
+      <VideoForm
+        isOpen={isFormOpen}
+        onClose={() => {
+          setIsFormOpen(false);
+          setEditingVideo(undefined);
+        }}
+        onSubmit={handleFormSubmit}
+        initialData={editingVideo}
+        initialName={search}
+      />
+
+      {playingVideo && (
+        <VideoPlayerModal
+          video={playingVideo}
+          onClose={() => setPlayingVideo(null)}
+        />
+      )}
+    </div>
+  );
 }

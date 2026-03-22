@@ -1,25 +1,23 @@
 # 🎵 Music
 
-**A personal video manager to index, organize, and play your favorite YouTube music videos.**
+**A personal pinned video player for your favorite YouTube music & content.**
 
-"Music" is designed to be your go-to tool for curating your personal playlist. With instant search, tagging, and embedded playback, it helps you keep your favorite songs just a click away.
+"Music" lets you quickly pin and manage your most-played videos with an intuitive 4-slot player (1 main + 3 secondary). Built for instant access to your favorite content. Empty slots show a 💿 (CD) icon.
 
 ---
 
 ## ✨ Key Features
 
-- **🔎 Smart Search**: Find songs by:
-    - Name (e.g., "Bohemian Rhapsody")
-    - Tags (e.g., #Rock, #Live)
-- **🔃 Drag & Drop**: Organize your playlist your way by dragging and dropping cards.
+- **📍 Pinned Video Player**:
+  - 1 main video slot (full display)
+  - 3 secondary stack (quick access, bottom-anchored)
+  - Empty slots show a 💿 (CD) icon
+- **🔗 Quick Add**: Paste YouTube URLs to instantly pin videos to available slots. Invalid links show a clear ❌ error notification.
 - **🌍 Internationalization**: Fully localized interface with English (EN) and Spanish (ES) support.
-- **▶️ In-App Playback**: Watch videos instantly in a sleek modal without leaving the app.
-- **⚡️ Rapid Add**: Auto-fetch video titles from YouTube URLs.
-- **🏷️ Tagging System**: Organize your library with custom tags.
-- **💾 Data Management**: 
-    - **Export**: Backup your library or share specific tags via JSON.
-    - **Import**: Restore your collection easily.
-- **🎨 Clean UI**: Minimalist design with a focus on music.
+- **▶️ Embedded Playback**: Watch videos directly in the app with YouTube embeds.
+- **💾 Persistent Storage**: Your pinned videos are automatically saved and restored.
+- **🎨 Clean UI**: Minimal, distraction-free design focused on video playback.
+- **🎯 Dual Modes**: Music and Study modes with separate pinned video collections.
 
 ---
 
@@ -29,6 +27,7 @@
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Icons**: [Lucide React](https://lucide.dev/)
+- **Persistence**: Browser localStorage (no backend required)
 
 This section is for reference — you don't need to be a developer to use the app.
 
@@ -37,51 +36,50 @@ This section is for reference — you don't need to be a developer to use the ap
 ## 🕹 Usage
 
 ### 🌐 Switching language
-- Open the **Configuration** (wrench icon at the bottom right) to toggle between English (EN) and Spanish (ES).
 
-### ➕ Adding items
-- Click the large "Add" card to create a new entry.
-- Paste a YouTube URL — the app will fetch the title automatically when possible.
-- Add one or more tags to organize your library (e.g. Code, Hardware, Focus).
+- The app auto-detects your language, or you can switch between English (EN) and Spanish (ES) in your browser settings.
 
-### 🔎 Finding content
-- Use the search bar to find items by name.
-- Click a tag in the tag cloud to filter the list to that category.
+### 📍 Pinning Videos
 
-### ▶️ Listening / Watching
-- Click the thumbnail on a card to open an embedded player and watch the video without leaving the app.
+- Click the input field and paste a YouTube URL.
+- The app validates the link and adds the video to the lowest available secondary slot (main slot is fixed).
+- If all slots are full, you'll be notified.
+- If the link is invalid, a red ❌ notification appears at the top.
 
-### 🧭 Quick navigation
-- The top area includes quick controls (Mode switch, search).
+### 🎬 Managing Your Player
 
-### ⚙️ Configuration & Backup
-- Open the Wrench icon to access settings:
-    - Set a default playlist/link for the footer.
-    - Hide tags you don't want to see.
-    - Import and export collections as JSON. Exported files are prefixed with the current mode (e.g. `music-...` or `study-...`).
+- **Main Video**: The main slot is always fixed. Secondary slots cannot be promoted.
+- **Remove Video**: Click the "Remove" button (×) on any video to delete it from the player.
+- **View Full Details**: Hover over videos to see title and video ID.
 
-All changes are stored in your browser — no account required.
+### ⚙️ Import/Export
+
+- Import and export your pinned video collections as JSON from the browser console or by manipulating localStorage.
+
+### 🧭 Navigation
+
+Quick links at the bottom left take you to:
+
+- **Home** (clock icon) → hoy.today
+- **Emojis** (smile icon) → milemojis.com
+- **Music** (CD icon) → You are here!
+- **Training** (joystick icon) → antipala.pro
+- **Moovimiento** (zap icon) → moovimiento.com
+
+All changes are stored in your browser — no account or login required.
 
 ---
 
-## 🧑‍🏫 Study interface (new)
+## 🎯 Dual Modes: Music & Study
 
-Switch to Study mode for a learning-first experience: a refreshed logo, a study-focused headline, and curated default content that helps you concentrate.
+Switch between two completely separate environments, each with its own pinned videos:
 
-- How to enable
-    - Use the mode switch in the header (🎵 for Music, 📚 for Study) to toggle between vibes instantly.
+- **Music Mode**: Your personal music library with curated default videos (Diplo as main and Zero Distractions as secondary by default).
+- **Study Mode**: A focused environment with study-oriented content and a study-themed interface.
 
-- What changes
-    - The app shows a study-oriented logo and headline.
-    - A separate default collection of study videos is loaded (examples: Competitive Programming, Cybersecurity, Hardware tutorials).
-    - Study tags include: Code, Cybersecurity, Hardware.
-
-- Per-mode behavior
-    - Settings like the footer playlist URL and hidden-tags are stored per mode, so music and study configurations remain separate.
-    - Exported backups include the active mode in the filename (`music-...` or `study-...`).
+Use the mode toggle in the header (🎵 for Music, 📚 for Study) to switch instantly. Settings and pinned videos are kept separate per mode. Exported backups include the active mode in the filename (`music-...` or `study-...`).
 
 Enjoy switching between vibes — music when you want to relax, study when you want to focus.
-
 
 ---
 

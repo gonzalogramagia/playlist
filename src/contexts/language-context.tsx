@@ -12,27 +12,18 @@ type Language = "es" | "en";
 
 interface LanguageContextType {
   language: Language;
-  mode: "music" | "study";
+  mode: "music";
   t: (key: string) => string;
   setLanguage: (lang: Language) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [language, setLanguage] = useState<Language>("es");
-  const [mode, setMode] = useState<"music" | "study">(() => {
-    try {
-      return localStorage.getItem("config-interface-mode") === "study"
-        ? "study"
-        : "music";
-    } catch (e) {
-      return "music";
-    }
-  });
 
   useEffect(() => {
     if (location.pathname.startsWith("/en")) {
@@ -89,7 +80,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       headline_part2: "al instante!",
       searchSuffix: " Music",
       interfaceMode: "Actualizar Interfaz",
-      studyInterface: "Modo de Estudio",
+      musicInterface: "Modo Música",
+      studyInterface: "Modo Estudio",
       interfaceDesc: "Cambia logo, título y links por defecto",
       on: "ON",
       off: "OFF",
@@ -131,6 +123,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       headline_part2: "in a flash!",
       searchSuffix: " Music",
       interfaceMode: "Update Interface",
+      musicInterface: "Music Mode",
       studyInterface: "Study Mode",
       interfaceDesc: "Change logo, title and default links",
       on: "ON",
@@ -138,88 +131,25 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     },
   };
 
-  const studyOverrides: Record<Language, Record<string, string>> = {
-    es: {
-      addSong: "Agregar Clase",
-      editSong: "Editar Clase",
-      name: "Nombre de la Clase",
-      namePlaceholder: "Ej: Introducción a React",
-      searchPlaceholder: "Buscar clases...",
-      noSongsFound: "No se encontraron clases",
-      toastSongAdded: "Clase agregada a la biblioteca",
-      toastSongUpdated: "Clase actualizada correctamente",
-      moreSongsIn: "Más material de estudio en",
-      playlistUrlLabel: 'URL de "Más material de estudio en..."',
-      tagsPlaceholder: "Programación, Ciberseguridad, Hardware",
-      headline_part1: "¡Tu material de estudio",
-      headline_part2: "al instante!",
-      searchSuffix: "",
-    },
-    en: {
-      addSong: "Add Class",
-      editSong: "Edit Class",
-      name: "Class Name",
-      namePlaceholder: "Ex: Intro to React",
-      searchPlaceholder: "Search classes...",
-      noSongsFound: "No classes found",
-      toastSongAdded: "Class added to library",
-      toastSongUpdated: "Class updated successfully",
-      moreSongsIn: "More study material at",
-      playlistUrlLabel: '"More study material at..." URL',
-      tagsPlaceholder: "Programming, Cybersecurity, Hardware",
-      headline_part1: "Your study material",
-      headline_part2: "in a flash!",
-      searchSuffix: "",
-    },
-  };
-
-  useEffect(() => {
-    const onConfig = () => {
-      try {
-        setMode(
-          localStorage.getItem("config-interface-mode") === "study"
-            ? "study"
-            : "music"
-        );
-      } catch (e) {
-        setMode("music");
-      }
-    };
-    window.addEventListener("config-update", onConfig);
-    return () => window.removeEventListener("config-update", onConfig);
-  }, []);
-
   const t = useCallback(
     (key: string) => {
       const base = translations[language] || {};
-      const overrides = mode === "study" ? studyOverrides[language] || {} : {};
-      return (overrides[key] ?? base[key]) || key;
+      return base[key] || key;
     },
-    [language, mode]
+    [language],
   );
 
   useEffect(() => {
-    const isStudy = mode === "study";
-    const title = isStudy ? "💻 😎 📚" : "♪♫♪♫";
-
-    // Metadata always in English as requested
-    const enBase = translations.en;
-    const enStudy = studyOverrides.en;
-
-    const headline1 = isStudy ? enStudy.headline_part1 : enBase.headline_part1;
-    const headline2 = isStudy ? enStudy.headline_part2 : enBase.headline_part2;
-    const modeSuffix = isStudy ? " | Study Mode 📚" : " | Music Mode 🎵";
-    const description = `${headline1} ${headline2}${modeSuffix}`;
-
-    const image = isStudy ? "/studying.png" : "/dj.png";
-    const fullImageUrl = `https://bien.estate${image}`;
+    const title = "♪♫♪♫";
+    const description = `${translations.en.headline_part1} ${translations.en.headline_part2} | Music Mode 🎵`;
+    const fullImageUrl = "https://bien.estate/dj.png";
 
     document.title = title;
 
     const updateMeta = (
       selector: string,
       content: string,
-      attr: string = "content"
+      attr: string = "content",
     ) => {
       const el = document.querySelector(selector);
       if (el) el.setAttribute(attr, content);
@@ -234,10 +164,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     updateMeta('meta[property="twitter:title"]', title);
     updateMeta('meta[property="twitter:description"]', description);
     updateMeta('meta[property="twitter:image"]', fullImageUrl);
-  }, [mode]); // No longer depends on language or t, as it's always English
+  }, []);
 
   return (
-    <LanguageContext.Provider value={{ language, mode, t, setLanguage }}>
+    <LanguageContext.Provider
+      value={{ language, mode: "music", t, setLanguage }}
+    >
       {children}
     </LanguageContext.Provider>
   );
