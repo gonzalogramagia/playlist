@@ -471,10 +471,6 @@ export function MusicBrowser() {
   // Los vacíos siempre arriba, los ocupados debajo, sin reordenar los ocupados
   // ...eliminado: variable no usada
   // const isPinningDisabled = false; // Siempre se puede fijar
-  const emptySlotMessage =
-    language === "es"
-      ? "Al fijar un nuevo video musical aparecerá aquí"
-      : "When you pin a new music video, it will appear here";
 
   const isReorderingAllowed =
     !search.trim() && !activeTag && hiddenTags.length === 0 && !isMobile;
