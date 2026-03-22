@@ -1,3 +1,4 @@
+// Archivo eliminado. Componente ya no es necesario.
 import {
   Wrench,
   X,

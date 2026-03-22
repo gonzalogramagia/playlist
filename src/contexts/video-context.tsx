@@ -15,7 +15,7 @@ export interface Video {
   embedUrl?: string;
 }
 
-const STORAGE_KEY = "pinned-videos";
+const STORAGE_KEY = "pinned-videos-v2";
 
 type VideoContextType = {
   videos: Video[];
@@ -63,23 +63,6 @@ export const VideoProvider = ({ children }: { children: ReactNode }) => {
   const [videos, setVideos] = useState<Video[]>([]);
 
   useEffect(() => {
-    const defaultMusic: Video[] = [
-      {
-        id: "default-song-1",
-        name: "Diplo - Live in Antarctica 2023 (Full Set)",
-        url: "https://www.youtube.com/watch?v=QtKGMfeyPUE",
-        tags: ["Electronic", "Focus"],
-        embedUrl: getEmbedUrl("https://www.youtube.com/watch?v=QtKGMfeyPUE"),
-      },
-      {
-        id: "default-song-2",
-        name: "Zero Distractions - Chillstep Mix for Full Focus",
-        url: "https://www.youtube.com/watch?v=hbPoX4vjB5o",
-        tags: ["Focus"],
-        embedUrl: getEmbedUrl("https://www.youtube.com/watch?v=hbPoX4vjB5o"),
-      },
-    ];
-
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
@@ -92,8 +75,8 @@ export const VideoProvider = ({ children }: { children: ReactNode }) => {
         console.error("Failed to parse videos from local storage", e);
       }
     }
-    setVideos(defaultMusic);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultMusic));
+    setVideos([]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
   }, []);
 
   const saveVideos = (newVideos: Video[]) => {

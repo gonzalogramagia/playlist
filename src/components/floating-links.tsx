@@ -1,3 +1,4 @@
+// Archivo eliminado. Componente ya no es necesario.
 import { ClipboardClock, Smile, Disc3, Joystick, Zap } from "lucide-react";
 import { useLanguage } from "../contexts/language-context";
 export function FloatingLinks() {

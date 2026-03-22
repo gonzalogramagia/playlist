@@ -1,3 +1,4 @@
+// Archivo eliminado. Componente ya no es necesario.
 import { useState, useEffect } from "react";
 import { FileUp, X, CheckSquare, Square } from "lucide-react";
 import { Link } from "react-router-dom";

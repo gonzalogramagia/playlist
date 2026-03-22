@@ -96,23 +96,12 @@ export function MusicBrowser() {
   const [pinUrl, setPinUrl] = useState("");
   const [focusedEditUrl, setFocusedEditUrl] = useState("");
   const [pinnedVideos, setPinnedVideos] = useState<
-    Array<{ url: string; name: string } | null>
+    ({ url: string; name: string } | null)[]
   >([null, null, null, null]);
+  const [pinPosition, setPinPosition] = useState(1); // 1-4
   const [focusIndex, setFocusIndex] = useState(0);
   const [pinnedHydrated, setPinnedHydrated] = useState(false);
   const pinUrlInputRef = useRef<HTMLInputElement>(null);
-  const defaultPinnedVideos: Array<{ url: string; name: string } | null> = [
-    {
-      url: "https://www.youtube.com/watch?v=QtKGMfeyPUE",
-      name: "Diplo - Live in Antarctica 2023 (Full Set)",
-    },
-    {
-      url: "https://www.youtube.com/watch?v=hbPoX4vjB5o",
-      name: "Zero Distractions - Chillstep Mix for Full Focus",
-    },
-    null,
-    null,
-  ];
 
   useEffect(() => {
     const checkMobile = () => {
@@ -127,43 +116,44 @@ export function MusicBrowser() {
   useEffect(() => {
     setPinnedHydrated(false);
 
-    const savedPinnedVideos = localStorage.getItem(
-      `config-pinned-videos_${mode}`,
-    );
-    const savedFocusIndex = localStorage.getItem(
-      `config-pinned-focus-index_${mode}`,
-    );
-
-    if (!savedPinnedVideos) {
-      setPinnedVideos(defaultPinnedVideos);
-    } else {
+    const saved = localStorage.getItem("pinned-videos-v2");
+    if (saved) {
       try {
-        const parsed = JSON.parse(savedPinnedVideos);
-        if (Array.isArray(parsed) && parsed.length === 4) {
-          setPinnedVideos(parsed);
-        } else if (Array.isArray(parsed) && parsed.length === 3) {
-          setPinnedVideos([...parsed, null]);
+        let parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Normaliza y filtra duplicados por ID
+          const seen = new Set();
+          parsed = parsed
+            .map((v: any) =>
+              v && v.url ? { ...v, url: normalizeYoutubeUrl(v.url) } : null,
+            )
+            .filter((v: any) => {
+              if (!v) return false;
+              const id = extractYoutubeId(v.url);
+              if (!id || seen.has(id)) return false;
+              seen.add(id);
+              return true;
+            });
+          // Asegura 4 slots
+          const arr = [null, null, null, null];
+          parsed.slice(0, 4).forEach((v: any, i: number) => {
+            arr[i] = v;
+          });
+          setPinnedVideos(arr);
+          localStorage.setItem("pinned-videos-v2", JSON.stringify(arr));
         } else {
-          setPinnedVideos(defaultPinnedVideos);
+          setPinnedVideos([null, null, null, null]);
+          localStorage.removeItem("pinned-videos-v2");
         }
       } catch {
-        setPinnedVideos(defaultPinnedVideos);
+        setPinnedVideos([null, null, null, null]);
+        localStorage.removeItem("pinned-videos-v2");
       }
-    }
-
-    if (savedFocusIndex === null) {
-      setFocusIndex(0);
     } else {
-      const parsedFocus = Number(savedFocusIndex);
-      if ([0, 1, 2, 3].includes(parsedFocus)) {
-        setFocusIndex(parsedFocus);
-      } else {
-        setFocusIndex(0);
-      }
+      setPinnedVideos([null, null, null, null]);
     }
-
     setPinnedHydrated(true);
-  }, [mode]);
+  }, []);
 
   useEffect(() => {
     if (!pinnedHydrated) return;
@@ -220,7 +210,8 @@ export function MusicBrowser() {
   // Filter tags to exclude hidden ones
   const allTags = useMemo(() => {
     const tags = new Set<string>();
-    videos.forEach((video) => {
+    videos.filter(Boolean).forEach((video) => {
+      if (!video || !Array.isArray(video.tags)) return;
       video.tags.forEach((tag) => {
         if (!hiddenTags.includes(tag)) {
           tags.add(tag);
@@ -232,10 +223,12 @@ export function MusicBrowser() {
 
   // Filter videos based on search, active tag, and hidden tags
   const filteredVideos = useMemo(() => {
+    const validVideos = videos.filter(Boolean);
     // First filter by hidden tags (hide song if all its tags are hidden? or if it matches a hidden tag?)
     // User said "ocultar tags y sus canciones".
     // Let's hide video if it has tags AND none of them are visible.
-    const visibleVideos = videos.filter((video) => {
+    const visibleVideos = validVideos.filter((video) => {
+      if (!video || !Array.isArray(video.tags)) return false;
       if (video.tags.length === 0) return true; // No tags = visible
       return video.tags.some((tag) => !hiddenTags.includes(tag));
     });
@@ -314,55 +307,43 @@ export function MusicBrowser() {
     return null;
   };
 
+  const normalizeYoutubeUrl = (url: string): string => {
+    const id = extractYoutubeId(url);
+    return id ? `https://www.youtube.com/watch?v=${id}` : url;
+  };
+
   const handlePinUrlSubmit = () => {
-    if (pinnedVideos.every((video) => video !== null)) {
-      return;
-    }
-
-    if (pinUrl.trim() === "") {
-      return;
-    }
-
+    if (pinUrl.trim() === "") return;
     const videoId = extractYoutubeId(pinUrl);
-    if (videoId) {
-      const alreadyPinned = pinnedVideos.some((video) => {
-        if (!video) return false;
-        return extractYoutubeId(video.url) === videoId;
-      });
-
-      if (alreadyPinned) {
-        toast(
-          language === "es"
-            ? "Ese video ya está agregado"
-            : "This video is already added",
-          "error",
-        );
-        return;
-      }
-
-      const newVideo = {
-        url: `https://www.youtube.com/watch?v=${videoId}`,
-        name: "Temporary Video",
-      };
-
-      // Siempre llenar el slot vacío de mayor índice (más abajo visualmente)
-      const lastEmpty = [3, 2, 1].find((index) => pinnedVideos[index] === null);
-      const targetIndex = lastEmpty;
-      if (targetIndex === undefined) return;
-      setPinnedVideos((prev) => {
-        const next = [...prev];
-        next[targetIndex] = newVideo;
-        return next;
-      });
-      setPinUrl("");
-    } else {
+    if (!videoId) {
       toast(
         language === "es"
           ? "❌ Link de YouTube inválido"
           : "❌ Invalid YouTube link",
         "error",
       );
+      return;
     }
+    // Permitir sobreescribir en la posición elegida
+    const idx = pinPosition - 1;
+    const newVideo = {
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+      name: `Video ${pinPosition}`,
+    };
+    setPinnedVideos((prev) => {
+      const arr = [...prev];
+      arr[idx] = newVideo;
+      return arr;
+    });
+    // También agregar a la lista principal si no existe
+    if (!videos.some((v) => extractYoutubeId(v.url) === videoId)) {
+      addVideo({
+        name: `Video ${pinPosition}`,
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        tags: [],
+      });
+    }
+    setPinUrl("");
   };
 
   const handleFocusedUrlSubmit = (slotIndex: number, currentUrl: string) => {
@@ -406,15 +387,7 @@ export function MusicBrowser() {
       return;
     }
 
-    setPinnedVideos((prev) => {
-      const next = [...prev];
-      next[slotIndex] = {
-        ...(next[slotIndex] || { name: "Temporary Video" }),
-        url: `https://www.youtube.com/watch?v=${videoId}`,
-        name: next[slotIndex]?.name || "Temporary Video",
-      };
-      return next;
-    });
+    setPinnedVideos((prev) => prev.filter((_, i) => i !== slotIndex));
 
     setFocusedEditUrl("");
   };
@@ -443,11 +416,11 @@ export function MusicBrowser() {
   // ...eliminado: variables no usadas
   // Los vacíos siempre arriba, los ocupados debajo, sin reordenar los ocupados
   // ...eliminado: variable no usada
-  const isPinningDisabled = pinnedVideos.every((video) => video !== null);
+  const isPinningDisabled = false; // Siempre se puede fijar
   const emptySlotMessage =
     language === "es"
       ? "Al fijar un nuevo video musical aparecerá aquí"
-      : "When you pin a new musical video, it will appear here";
+      : "When you pin a new music video, it will appear here";
 
   const isReorderingAllowed =
     !search.trim() && !activeTag && hiddenTags.length === 0 && !isMobile;
@@ -495,33 +468,75 @@ export function MusicBrowser() {
         </div>
 
         <div className="mb-6">
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <select
+              value={pinPosition}
+              onChange={(e) => setPinPosition(Number(e.target.value))}
+              className="h-12 w-14 text-xl text-right font-bold rounded-lg border-2 border-[#6866D6] bg-white text-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 shadow-sm transition-all cursor-pointer hover:bg-[#f3f0ff] hover:border-[#5856b3] appearance-none pl-7 pr-3 relative"
+              style={{
+                backgroundImage:
+                  "url(\"data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6L8 10L12 6' stroke='%236866D6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "left 0.4rem center",
+                backgroundSize: "1.25rem 1.25rem",
+              }}
+            >
+              {[1, 2, 3, 4].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
             <input
               ref={pinUrlInputRef}
               type="text"
               placeholder={
                 language === "es"
-                  ? "Pega un link de YouTube (ej: youtube.com/watch?v=...)"
-                  : "Paste a YouTube link (e.g., youtube.com/watch?v=...)"
+                  ? "Pega un link de YouTube (ej: youtu.be/QtKGMfeyPUE)"
+                  : "Paste a YouTube link (e.g., youtu.be/QtKGMfeyPUE)"
               }
               value={pinUrl}
               onChange={(e) => setPinUrl(e.target.value)}
-              disabled={isPinningDisabled}
               onKeyPress={(e) => {
                 if (e.key === "Enter") {
                   handlePinUrlSubmit();
                 }
               }}
-              className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all text-neutral-900 placeholder-neutral-500 font-medium ${isPinningDisabled ? "bg-neutral-100 border-neutral-300 cursor-not-allowed opacity-70" : "bg-[#6866D6]/5 border-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 focus:border-[#6866D6]"}`}
+              className={`flex-1 px-4 py-2.5 rounded-lg border-2 transition-all text-neutral-900 placeholder-neutral-500 font-medium bg-[#6866D6]/5 border-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 focus:border-[#6866D6]`}
             />
             <button
               onClick={handlePinUrlSubmit}
-              disabled={isPinningDisabled}
-              className={`px-6 py-3 text-white rounded-lg font-bold flex items-center gap-2 shadow-md transition-all ${isPinningDisabled ? "bg-neutral-400 cursor-not-allowed opacity-70" : "bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer"}`}
+              className={`px-6 py-3 text-white rounded-lg font-bold flex items-center gap-2 shadow-md transition-all bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer`}
             >
               <Pin className="w-5 h-5" />
               {language === "es" ? "Fijar" : "Pin"}
             </button>
+          </div>
+          {/* Ejemplos de links para testear */}
+          <div className="flex flex-wrap gap-2 mt-2 items-center bg-neutral-50/80 rounded px-2 py-1 border border-neutral-100">
+            <span className="text-xs text-neutral-500 font-normal mr-2">
+              {language === "es"
+                ? "Links de ejemplo para testeo rápido:"
+                : "Example links for quick test:"}
+            </span>
+            <input
+              type="text"
+              value="https://youtu.be/QtKGMfeyPUE"
+              readOnly
+              className="w-48 px-1.5 py-0.5 border border-neutral-200 rounded text-xs bg-neutral-100 text-neutral-600 focus:bg-white transition-colors"
+              style={{ fontSize: 12 }}
+              onFocus={(e) => e.target.select()}
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+            />
+            <input
+              type="text"
+              value="https://youtu.be/hbPoX4vjB5o"
+              readOnly
+              className="w-48 px-1.5 py-0.5 border border-neutral-200 rounded text-xs bg-neutral-100 text-neutral-600 focus:bg-white transition-colors"
+              style={{ fontSize: 12 }}
+              onFocus={(e) => e.target.select()}
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+            />
           </div>
         </div>
       </>
@@ -536,7 +551,7 @@ export function MusicBrowser() {
                   <iframe
                     width="100%"
                     height="100%"
-                    src={`https://www.youtube.com/embed/${focusedVideo.url.split("v=")[1]?.split("&")[0]}?modestbranding=1`}
+                    src={`https://www.youtube.com/embed/${extractYoutubeId(focusedVideo.url)}?modestbranding=1`}
                     frameBorder="0"
                     allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -580,7 +595,9 @@ export function MusicBrowser() {
                 className="bg-neutral-50 rounded-2xl border-2 border-dashed border-neutral-300 h-[29rem] flex items-center justify-center cursor-pointer"
               >
                 <div className="text-center">
-                  <div className="text-4xl mb-3 text-neutral-400">💿</div>
+                  <div className="text-4xl mb-3 text-neutral-400">
+                    1️⃣ <span role="img" aria-label="cd">💿</span>
+                  </div>
                   <p className="text-base text-neutral-500 font-medium">
                     {emptySlotMessage}
                   </p>
@@ -606,7 +623,7 @@ export function MusicBrowser() {
                           <iframe
                             width="100%"
                             height="100%"
-                            src={`https://www.youtube.com/embed/${slotVideo.url.split("v=")[1]?.split("&")[0]}?modestbranding=1`}
+                            src={`https://www.youtube.com/embed/${extractYoutubeId(slotVideo.url)}?modestbranding=1`}
                             frameBorder="0"
                             allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
@@ -618,6 +635,7 @@ export function MusicBrowser() {
                   );
                 }
 
+                // Placeholder con emoji de número y CD
                 return (
                   <div
                     key={slotIndex}
@@ -625,7 +643,12 @@ export function MusicBrowser() {
                     className="bg-neutral-50 rounded-lg border-2 border-dashed border-neutral-300 aspect-video flex items-center justify-center cursor-pointer"
                   >
                     <div className="text-center px-2">
-                      <div className="text-xl mb-1 text-neutral-400">💿</div>
+                      <div className="text-2xl mb-1 text-neutral-400">
+                        {["2️⃣", "3️⃣", "4️⃣"][slotIndex - 1]}{" "}
+                        <span role="img" aria-label="cd">
+                          💿
+                        </span>
+                      </div>
                       <p className="text-xs text-neutral-500 font-medium">
                         {emptySlotMessage}
                       </p>
@@ -645,7 +668,7 @@ export function MusicBrowser() {
                 <iframe
                   width="100%"
                   height="100%"
-                  src={`https://www.youtube.com/embed/${focusedVideo.url.split("v=")[1]?.split("&")[0]}?modestbranding=1`}
+                  src={`https://www.youtube.com/embed/${extractYoutubeId(focusedVideo.url)}?modestbranding=1`}
                   frameBorder="0"
                   allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -782,6 +805,31 @@ export function MusicBrowser() {
                       <p className="font-bold text-neutral-900">
                         {t("noSongsFound")}
                       </p>
+                      <div className="mt-4 flex flex-col items-center gap-2">
+                        <span className="text-sm text-neutral-700 mb-1">
+                          Links para testear:
+                        </span>
+                        <input
+                          type="text"
+                          value="https://youtu.be/QtKGMfeyPUE"
+                          readOnly
+                          className="w-full max-w-xs px-2 py-1 border rounded text-xs bg-neutral-50 cursor-pointer mb-1"
+                          onFocus={(e) => e.target.select()}
+                          onClick={(e) =>
+                            (e.target as HTMLInputElement).select()
+                          }
+                        />
+                        <input
+                          type="text"
+                          value="https://youtu.be/hbPoX4vjB5o"
+                          readOnly
+                          className="w-full max-w-xs px-2 py-1 border rounded text-xs bg-neutral-50 cursor-pointer"
+                          onFocus={(e) => e.target.select()}
+                          onClick={(e) =>
+                            (e.target as HTMLInputElement).select()
+                          }
+                        />
+                      </div>
                     </>
                   )}
                   <a
