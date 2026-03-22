@@ -1,4 +1,9 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+} from "react";
 import { useVideos, Video } from "../contexts/video-context";
 import { useToast } from "../contexts/toast-context";
 import { useLanguage } from "../contexts/language-context";
@@ -16,34 +21,26 @@ import {
   Play,
   Pin,
 } from "lucide-react";
-
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
-  PointerSensor,
   useSensor,
   useSensors,
+  PointerSensor,
+  KeyboardSensor,
   DragEndEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  useSortable,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
+
+import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-function SortableVideoItem({
-  id,
-  children,
-  disabled,
-}: {
-  id: string;
-  children: React.ReactNode;
-  disabled: boolean;
-}) {
+function SortableVideoItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled: boolean }) {
   const {
     attributes,
     listeners,
@@ -313,6 +310,7 @@ export function MusicBrowser() {
   };
 
   const handlePinUrlSubmit = () => {
+    setPinUrl("");
     if (pinUrl.trim() === "") return;
     const videoId = extractYoutubeId(pinUrl);
     if (!videoId) {
@@ -335,15 +333,17 @@ export function MusicBrowser() {
       arr[idx] = newVideo;
       return arr;
     });
-    // También agregar a la lista principal si no existe
-    if (!videos.some((v) => extractYoutubeId(v.url) === videoId)) {
+    // Solo agregar a la lista principal si es el slot 1
+    if (
+      pinPosition === 1 &&
+      !videos.some((v) => extractYoutubeId(v.url) === videoId)
+    ) {
       addVideo({
         name: `Video ${pinPosition}`,
         url: `https://www.youtube.com/watch?v=${videoId}`,
         tags: [],
       });
     }
-    setPinUrl("");
   };
 
   const handleFocusedUrlSubmit = (slotIndex: number, currentUrl: string) => {
@@ -393,7 +393,15 @@ export function MusicBrowser() {
   };
 
   const handleClickPinned = (index: number) => {
-    setFocusIndex(index);
+    if (index === 0) return;
+    setPinnedVideos((prev) => {
+      const next = [...prev];
+      const temp = next[0];
+      next[0] = next[index];
+      next[index] = temp;
+      return next;
+    });
+    setFocusIndex(0);
   };
 
   const handleClickPlaceholder = () => {
@@ -559,6 +567,52 @@ export function MusicBrowser() {
                   />
                 </div>
                 <div className="p-5 flex items-center justify-between bg-white gap-3">
+                  {/* Selector para mover/intercambiar el video principal */}
+                  <select
+                    className="mr-2 pl-1 pr-1 py-2 rounded border border-gray-300 bg-gray-50 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all appearance-none relative cursor-pointer"
+                    style={{
+                      backgroundImage:
+                        "url('data:image/svg+xml;utf8,<svg fill=\'none\' stroke=\'%23666\' stroke-width=\'2\' viewBox=\'0 0 24 24\' xmlns=\'http://www.w3.org/2000/svg\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19 9l-7 7-7-7\'></path></svg>')",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 0.3em center",
+                      backgroundSize: "0.9em 0.9em",
+                      minWidth: "48px",
+                      maxWidth: "70px",
+                      width: "auto",
+                    }}
+                    title="Mover o intercambiar video principal"
+                    value=""
+                    onChange={(e) => {
+                      const slot = Number(e.target.value);
+                      if (![1, 2, 3].includes(slot)) return;
+                      setPinnedVideos((prev) => {
+                        const next = [...prev];
+                        if (!next[0]) return prev; // No hay video principal
+                        if (!next[slot]) {
+                          // Mover principal a slot vacío
+                          next[slot] = next[0];
+                          next[0] = null;
+                        } else {
+                          // Intercambiar
+                          const temp = next[0];
+                          next[0] = next[slot];
+                          next[slot] = temp;
+                        }
+                        return next;
+                      });
+                      setFocusIndex(0); // Mantener foco en principal
+                      e.target.value = ""; // Resetear selector
+                    }}
+                  >
+                    <option value="" disabled style={{ fontWeight: 'bold' }}>
+                      <span style={{ fontWeight: 'bold' }}>Mover</span> ➡
+                    </option>
+                    {[1, 2, 3].map((i) => (
+                      <option key={i} value={i}>
+                        {`Slot ${i + 1}${pinnedVideos[i] ? " (intercambiar)" : " (vacío)"}`}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     type="text"
                     value={
