@@ -109,6 +109,7 @@ export function MusicBrowser() {
     ({ url: string; name: string } | null)[]
   >([null, null, null, null]);
   const [pinPosition, setPinPosition] = useState(1); // 1-4
+  const [isPinReset, setIsPinReset] = useState(false);
   const [focusIndex, setFocusIndex] = useState(0);
   const [pinnedHydrated, setPinnedHydrated] = useState(false);
   const pinUrlInputRef = useRef<HTMLInputElement>(null);
@@ -386,6 +387,10 @@ export function MusicBrowser() {
         tags: [],
       });
     }
+
+    setPinPosition(1);
+    setIsPinReset(true);
+    setTimeout(() => setIsPinReset(false), 800);
   };
 
   const handleFocusedUrlSubmit = (slotIndex: number, currentUrl: string) => {
@@ -446,7 +451,8 @@ export function MusicBrowser() {
     setFocusIndex(0);
   };
 
-  const handleClickPlaceholder = () => {
+  const handleClickPlaceholder = (slotIndex: number = 0) => {
+    setPinPosition(slotIndex + 1);
     // Only focus the input, do not change the main focus
     setTimeout(() => {
       pinUrlInputRef.current?.focus();
@@ -518,7 +524,7 @@ export function MusicBrowser() {
             <select
               value={pinPosition}
               onChange={(e) => setPinPosition(Number(e.target.value))}
-              className="h-12 w-14 text-xl text-right font-bold rounded-lg border-2 border-[#6866D6] bg-white text-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 shadow-sm transition-all cursor-pointer hover:bg-[#f3f0ff] hover:border-[#5856b3] appearance-none pl-7 pr-3 relative"
+              className={`h-12 w-14 text-xl text-right font-bold rounded-lg border-2 border-[#6866D6] text-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 shadow-sm transition-all duration-300 cursor-pointer hover:bg-[#f3f0ff] hover:border-[#5856b3] appearance-none pl-7 pr-3 relative ${isPinReset ? 'animate-pulse ring-4 ring-[#6866D6]/50 bg-[#f3f0ff] scale-[1.15]' : 'bg-white'}`}
               style={{
                 backgroundImage:
                   "url(\"data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6L8 10L12 6' stroke='%236866D6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
@@ -707,7 +713,7 @@ export function MusicBrowser() {
               </div>
             ) : (
               <div
-                onClick={handleClickPlaceholder}
+                onClick={() => handleClickPlaceholder(0)}
                 className="bg-neutral-50 rounded-2xl border-2 border-dashed border-neutral-300 h-[29rem] flex items-center justify-center cursor-pointer"
               >
                 <div className="text-center">
@@ -765,7 +771,7 @@ export function MusicBrowser() {
                 return (
                   <div
                     key={slotIndex}
-                    onClick={handleClickPlaceholder}
+                    onClick={() => handleClickPlaceholder(slotIndex)}
                     className="bg-neutral-50 rounded-lg border-2 border-dashed border-neutral-300 aspect-video flex items-center justify-center cursor-pointer"
                   >
                     <div className="text-center px-2">
@@ -829,7 +835,7 @@ export function MusicBrowser() {
             </div>
           ) : (
             <div
-              onClick={handleClickPlaceholder}
+              onClick={() => handleClickPlaceholder(0)}
               className="bg-neutral-50 rounded-xl border-2 border-dashed border-neutral-300 aspect-video flex items-center justify-center cursor-pointer"
             >
               <div className="text-center">
@@ -861,7 +867,7 @@ export function MusicBrowser() {
                   onClick={
                     slotVideo
                       ? () => handleClickPinned(slotIndex)
-                      : handleClickPlaceholder
+                      : () => handleClickPlaceholder(slotIndex)
                   }
                   className={`flex-1 aspect-video flex flex-col items-center justify-center rounded-lg border-2 ${slotVideo ? "border-gray-200 bg-white cursor-pointer opacity-70 hover:opacity-100 transition-opacity" : "border-dashed border-neutral-300 bg-neutral-50 cursor-pointer"}`}
                   style={{ minWidth: 0 }}
