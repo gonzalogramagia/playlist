@@ -87,6 +87,12 @@ export function MusicBrowser() {
     undefined,
   );
   const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
+  const [confirmReplaceModal, setConfirmReplaceModal] = useState<{
+    isOpen: boolean;
+    videoId: string;
+    pinPosition: number;
+    pinUrl: string;
+  } | null>(null);
   // Doble confirmación: 0 = nada, 1 = primer check, 2 = segundo check
   const [confirmDelete, setConfirmDelete] = useState<{
     id: string;
@@ -352,24 +358,12 @@ export function MusicBrowser() {
     return id ? `https://www.youtube.com/watch?v=${id}` : url;
   };
 
-  const handlePinUrlSubmit = () => {
-    setPinUrl("");
-    if (pinUrl.trim() === "") return;
-    const videoId = extractYoutubeId(pinUrl);
-    if (!videoId) {
-      toast(
-        language === "es"
-          ? "❌ Link de YouTube inválido"
-          : "❌ Invalid YouTube link",
-        "error",
-      );
-      return;
-    }
-    // Permitir sobreescribir en la posición elegida
-    const idx = pinPosition - 1;
+  const executeReplacePin = (videoId: string, position: number) => {
+    setConfirmReplaceModal(null);
+    const idx = position - 1;
     const newVideo = {
       url: `https://www.youtube.com/watch?v=${videoId}`,
-      name: `Video ${pinPosition}`,
+      name: `Video ${position}`,
     };
     setPinnedVideos((prev) => {
       const arr = [...prev];
@@ -378,19 +372,57 @@ export function MusicBrowser() {
     });
     // Solo agregar a la lista principal si es el slot 1
     if (
-      pinPosition === 1 &&
+      position === 1 &&
       !videos.some((v) => extractYoutubeId(v.url) === videoId)
     ) {
       addVideo({
-        name: `Video ${pinPosition}`,
+        name: `Video ${position}`,
         url: `https://www.youtube.com/watch?v=${videoId}`,
         tags: [],
       });
     }
 
+    setPinUrl("");
     setPinPosition(1);
     setIsPinReset(true);
     setTimeout(() => setIsPinReset(false), 800);
+  };
+
+  const handlePinUrlSubmit = () => {
+    if (pinUrl.trim() === "") {
+      setPinUrl("");
+      return;
+    }
+    const videoId = extractYoutubeId(pinUrl);
+    if (!videoId) {
+      toast(
+        language === "es"
+          ? "❌ Link de YouTube inválido"
+          : "❌ Invalid YouTube link",
+        "error",
+      );
+      setPinUrl("");
+      return;
+    }
+
+    const idx = pinPosition - 1;
+
+    if (pinnedVideos[idx] && extractYoutubeId(pinnedVideos[idx]!.url) === videoId) {
+      setPinUrl("");
+      return;
+    }
+
+    if (pinnedVideos[idx]) {
+      setConfirmReplaceModal({
+        isOpen: true,
+        videoId,
+        pinPosition,
+        pinUrl
+      });
+      return;
+    }
+
+    executeReplacePin(videoId, pinPosition);
   };
 
   const handleFocusedUrlSubmit = (slotIndex: number, currentUrl: string) => {
@@ -1150,6 +1182,42 @@ export function MusicBrowser() {
           video={playingVideo}
           onClose={() => setPlayingVideo(null)}
         />
+      )}
+
+      {/* Confirm Replace Modal */}
+      {confirmReplaceModal?.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                {language === "es" ? "Reemplazar video" : "Replace video"}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {language === "es" 
+                  ? `¿Estás seguro que deseas reemplazar el video en la posición ${["1️⃣", "2️⃣", "3️⃣", "4️⃣"][confirmReplaceModal.pinPosition - 1]}?`
+                  : `Are you sure you want to replace the video in slot ${["1️⃣", "2️⃣", "3️⃣", "4️⃣"][confirmReplaceModal.pinPosition - 1]}?`}
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setConfirmReplaceModal(null)}
+                  className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors cursor-pointer"
+                >
+                  {language === "es" ? "Cancelar" : "Cancel"}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    executeReplacePin(confirmReplaceModal.videoId, confirmReplaceModal.pinPosition);
+                  }}
+                  className="px-4 py-2 text-white bg-[#6866D6] hover:bg-[#5856b3] rounded-lg font-medium transition-colors cursor-pointer"
+                >
+                  {language === "es" ? "Reemplazar" : "Replace"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
