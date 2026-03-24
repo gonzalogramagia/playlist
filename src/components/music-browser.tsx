@@ -538,7 +538,13 @@ export function MusicBrowser() {
             <h1 className="mx-auto md:mx-0 md:max-w-xl text-3xl md:text-5xl font-extrabold text-center md:text-left text-neutral-900 leading-tight tracking-tight">
               <>
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-neutral-900 to-neutral-600 inline">
-                  {t("headline_part1")}
+                  {language === "en" ? (
+                    <>
+                      Your perfect <br className="md:hidden" /> soundtrack
+                    </>
+                  ) : (
+                    t("headline_part1")
+                  )}
                 </span>
                 <span
                   className={`text-[#6866D6] block ${language === "es" ? "md:inline" : ""}`}
@@ -548,34 +554,25 @@ export function MusicBrowser() {
                 </span>
               </>
             </h1>
-            <div className="mt-4 flex items-center gap-2 bg-neutral-100 p-1 rounded-full w-fit mx-auto md:mx-0">
-              <button
-                onClick={() => (window.location.href = "/")}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  language === "es"
-                    ? "bg-white shadow-sm text-[#6866D6]"
-                    : "text-neutral-500 hover:text-neutral-700"
-                }`}
-              >
-                ES
-              </button>
-              <button
-                onClick={() => (window.location.href = "/en")}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  language === "en"
-                    ? "bg-white shadow-sm text-[#6866D6]"
-                    : "text-neutral-500 hover:text-neutral-700"
-                }`}
-              >
-                EN
-              </button>
-            </div>
           </div>
         </div>
 
         <div className="mb-6">
           <div className="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
-            <div className="flex gap-2 flex-1">
+            <input
+              ref={pinUrlInputRef}
+              type="text"
+              placeholder={t("quickTestPlaceholder")}
+              value={pinUrl}
+              onChange={(e) => setPinUrl(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  handlePinUrlSubmit();
+                }
+              }}
+              className="order-1 md:order-2 flex-1 px-4 py-2.5 rounded-lg border-2 transition-all text-neutral-900 placeholder-neutral-500 font-medium bg-[#6866D6]/5 border-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 focus:border-[#6866D6]"
+            />
+            <div className="order-2 md:order-1 flex gap-2">
               <select
                 value={pinPosition}
                 onChange={(e) => setPinPosition(Number(e.target.value))}
@@ -594,34 +591,24 @@ export function MusicBrowser() {
                   </option>
                 ))}
               </select>
-              <input
-                ref={pinUrlInputRef}
-                type="text"
-                placeholder={
-                  language === "es"
-                    ? "Link para testeo rápido..."
-                    : "Quick test link..."
-                }
-                value={pinUrl}
-                onChange={(e) => setPinUrl(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    handlePinUrlSubmit();
-                  }
-                }}
-                className={`flex-1 px-4 py-2.5 rounded-lg border-2 transition-all text-neutral-900 placeholder-neutral-500 font-medium bg-[#6866D6]/5 border-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 focus:border-[#6866D6]`}
-              />
+              <button
+                onClick={handlePinUrlSubmit}
+                className="md:hidden flex-1 px-6 py-3 text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-md transition-all bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer"
+              >
+                <Pin className="w-5 h-5" />
+                {language === "es" ? "Fijar" : "Pin"}
+              </button>
             </div>
             <button
               onClick={handlePinUrlSubmit}
-              className={`px-6 py-3 text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-md transition-all bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer w-full md:w-auto`}
+              className="hidden md:flex order-3 px-6 py-3 text-white rounded-lg font-bold items-center justify-center gap-2 shadow-md transition-all bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer md:w-auto"
             >
               <Pin className="w-5 h-5" />
               {language === "es" ? "Fijar" : "Pin"}
             </button>
           </div>
           {/* Ejemplos de links para testear */}
-          <div className="flex flex-wrap gap-2 mt-2 items-center bg-neutral-50/80 rounded px-2 py-1 border border-neutral-100">
+          <div className="flex flex-wrap gap-2 mt-2 items-center justify-center md:justify-start bg-neutral-50/80 rounded px-2 py-1 border border-neutral-100">
             <span className="text-xs text-neutral-500 font-normal mr-2">
               {language === "es"
                 ? "Link para testeo rápido:"
@@ -964,8 +951,8 @@ export function MusicBrowser() {
         </div>
       </div>
 
-      {/* Song browser section */}
-      <div className="block mt-4">
+      {/* Hidden: song browser section */}
+      <div className="hidden">
         <div className="flex items-center gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-5 h-5" />
@@ -1001,32 +988,23 @@ export function MusicBrowser() {
 
         {/* Tag Cloud */}
         {allTags.length > 0 && !activeTag && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pb-6">
+          <div className="flex flex-wrap gap-2 justify-center md:justify-start pb-2">
             {allTags.map((tag) => (
               <button
                 key={tag}
                 onClick={() => setActiveTag(tag)}
-                className="relative flex items-center gap-2 p-2 rounded-xl hover:bg-neutral-50 transition-all text-left group overflow-hidden cursor-pointer border border-transparent hover:border-neutral-200"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded text-xs transition-colors cursor-pointer"
               >
-                <div className="text-sm min-w-[2rem] h-8 flex items-center justify-center bg-neutral-100 rounded-lg group-hover:bg-white transition-colors text-neutral-900 font-bold">
-                  #
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-bold truncate text-neutral-900">
-                    {getTagName(tag)}
-                  </span>
-                  <span className="text-[10px] text-neutral-400">
-                    {videos.filter(v => v.tags.includes(tag)).length} {language === "es" ? "videos" : "videos"}
-                  </span>
-                </div>
+                <Hash className="w-3 h-3" />
+                {getTagName(tag)}
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Song grid section */}
-      <div className="block mt-4">
+      {/* Hidden: song grid section */}
+      <div className="hidden">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
