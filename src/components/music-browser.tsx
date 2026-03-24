@@ -548,6 +548,28 @@ export function MusicBrowser() {
                 </span>
               </>
             </h1>
+            <div className="mt-4 flex items-center gap-2 bg-neutral-100 p-1 rounded-full w-fit mx-auto md:mx-0">
+              <button
+                onClick={() => (window.location.href = "/")}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  language === "es"
+                    ? "bg-white shadow-sm text-[#6866D6]"
+                    : "text-neutral-500 hover:text-neutral-700"
+                }`}
+              >
+                ES
+              </button>
+              <button
+                onClick={() => (window.location.href = "/en")}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  language === "en"
+                    ? "bg-white shadow-sm text-[#6866D6]"
+                    : "text-neutral-500 hover:text-neutral-700"
+                }`}
+              >
+                EN
+              </button>
+            </div>
           </div>
         </div>
 
@@ -942,8 +964,8 @@ export function MusicBrowser() {
         </div>
       </div>
 
-      {/* Hidden: song browser section */}
-      <div className="hidden">
+      {/* Song browser section */}
+      <div className="block mt-4">
         <div className="flex items-center gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-5 h-5" />
@@ -979,23 +1001,32 @@ export function MusicBrowser() {
 
         {/* Tag Cloud */}
         {allTags.length > 0 && !activeTag && (
-          <div className="flex flex-wrap gap-2 justify-center md:justify-start pb-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pb-6">
             {allTags.map((tag) => (
               <button
                 key={tag}
                 onClick={() => setActiveTag(tag)}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded text-xs transition-colors cursor-pointer"
+                className="relative flex items-center gap-2 p-2 rounded-xl hover:bg-neutral-50 transition-all text-left group overflow-hidden cursor-pointer border border-transparent hover:border-neutral-200"
               >
-                <Hash className="w-3 h-3" />
-                {getTagName(tag)}
+                <div className="text-sm min-w-[2rem] h-8 flex items-center justify-center bg-neutral-100 rounded-lg group-hover:bg-white transition-colors text-neutral-900 font-bold">
+                  #
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-bold truncate text-neutral-900">
+                    {getTagName(tag)}
+                  </span>
+                  <span className="text-[10px] text-neutral-400">
+                    {videos.filter(v => v.tags.includes(tag)).length} {language === "es" ? "videos" : "videos"}
+                  </span>
+                </div>
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Hidden: song grid section */}
-      <div className="hidden">
+      {/* Song grid section */}
+      <div className="block mt-4">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
