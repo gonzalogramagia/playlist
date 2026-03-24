@@ -552,45 +552,47 @@ export function MusicBrowser() {
         </div>
 
         <div className="mb-6">
-          <div className="flex gap-2 items-center">
-            <select
-              value={pinPosition}
-              onChange={(e) => setPinPosition(Number(e.target.value))}
-              className={`h-12 w-14 text-xl text-right font-bold rounded-lg border-2 border-[#6866D6] text-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 shadow-sm transition-all duration-300 cursor-pointer hover:bg-[#f3f0ff] hover:border-[#5856b3] appearance-none pl-7 pr-3 relative ${isPinReset ? 'animate-pulse ring-4 ring-[#6866D6]/50 bg-[#f3f0ff] scale-[1.15]' : 'bg-white'}`}
-              style={{
-                backgroundImage:
-                  "url(\"data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6L8 10L12 6' stroke='%236866D6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "left 0.4rem center",
-                backgroundSize: "1.25rem 1.25rem",
-              }}
-            >
-              {[1, 2, 3, 4].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-            <input
-              ref={pinUrlInputRef}
-              type="text"
-              placeholder={
-                language === "es"
-                  ? "Pega un link de YouTube (ej: youtu.be/QtKGMfeyPUE)"
-                  : "Paste a YouTube link (e.g., youtu.be/QtKGMfeyPUE)"
-              }
-              value={pinUrl}
-              onChange={(e) => setPinUrl(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  handlePinUrlSubmit();
+          <div className="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
+            <div className="flex gap-2 flex-1">
+              <select
+                value={pinPosition}
+                onChange={(e) => setPinPosition(Number(e.target.value))}
+                className={`h-12 w-14 text-xl text-right font-bold rounded-lg border-2 border-[#6866D6] text-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 shadow-sm transition-all duration-300 cursor-pointer hover:bg-[#f3f0ff] hover:border-[#5856b3] appearance-none pl-7 pr-3 relative ${isPinReset ? 'animate-pulse ring-4 ring-[#6866D6]/50 bg-[#f3f0ff] scale-[1.15]' : 'bg-white'}`}
+                style={{
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6L8 10L12 6' stroke='%236866D6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "left 0.4rem center",
+                  backgroundSize: "1.25rem 1.25rem",
+                }}
+              >
+                {[1, 2, 3, 4].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+              <input
+                ref={pinUrlInputRef}
+                type="text"
+                placeholder={
+                  language === "es"
+                    ? "Link para testeo rápido..."
+                    : "Quick test link..."
                 }
-              }}
-              className={`flex-1 px-4 py-2.5 rounded-lg border-2 transition-all text-neutral-900 placeholder-neutral-500 font-medium bg-[#6866D6]/5 border-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 focus:border-[#6866D6]`}
-            />
+                value={pinUrl}
+                onChange={(e) => setPinUrl(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handlePinUrlSubmit();
+                  }
+                }}
+                className={`flex-1 px-4 py-2.5 rounded-lg border-2 transition-all text-neutral-900 placeholder-neutral-500 font-medium bg-[#6866D6]/5 border-[#6866D6] focus:outline-none focus:ring-2 focus:ring-[#6866D6]/50 focus:border-[#6866D6]`}
+              />
+            </div>
             <button
               onClick={handlePinUrlSubmit}
-              className={`px-6 py-3 text-white rounded-lg font-bold flex items-center gap-2 shadow-md transition-all bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer`}
+              className={`px-6 py-3 text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-md transition-all bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer w-full md:w-auto`}
             >
               <Pin className="w-5 h-5" />
               {language === "es" ? "Fijar" : "Pin"}
@@ -600,14 +602,14 @@ export function MusicBrowser() {
           <div className="flex flex-wrap gap-2 mt-2 items-center bg-neutral-50/80 rounded px-2 py-1 border border-neutral-100">
             <span className="text-xs text-neutral-500 font-normal mr-2">
               {language === "es"
-                ? "Links de ejemplo para testeo rápido:"
-                : "Example links for quick test:"}
+                ? "Link para testeo rápido:"
+                : "Quick test link:"}
             </span>
             <input
               type="text"
               value="https://youtu.be/QtKGMfeyPUE"
               readOnly
-              className="w-48 px-1.5 py-0.5 border border-neutral-200 rounded text-xs bg-neutral-100 text-neutral-600 focus:bg-white transition-colors"
+              className="px-1.5 py-0.5 border border-neutral-200 rounded text-xs bg-neutral-100 text-neutral-600 focus:bg-white transition-colors w-48"
               style={{ fontSize: 12 }}
               onFocus={(e) => e.target.select()}
               onClick={(e) => (e.target as HTMLInputElement).select()}
@@ -616,7 +618,7 @@ export function MusicBrowser() {
               type="text"
               value="https://youtu.be/hbPoX4vjB5o"
               readOnly
-              className="w-48 px-1.5 py-0.5 border border-neutral-200 rounded text-xs bg-neutral-100 text-neutral-600 focus:bg-white transition-colors hidden md:inline-block"
+              className="px-1.5 py-0.5 border border-neutral-200 rounded text-xs bg-neutral-100 text-neutral-600 focus:bg-white transition-colors hidden md:inline-block w-48"
               style={{ fontSize: 12 }}
               onFocus={(e) => e.target.select()}
               onClick={(e) => (e.target as HTMLInputElement).select()}
@@ -831,13 +833,12 @@ export function MusicBrowser() {
           </div>
         </div>
 
-        {/* Mobile: principal y secundarios en fila */}
-        <div className="md:hidden">
+        {/* Mobile: Pinned Videos Layout */}
+        <div className="md:hidden space-y-4">
           {focusedVideo ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden ring-1 ring-black/5">
               <div className="aspect-video bg-gray-100 relative">
-                {/* Emoji 1️⃣💿 en la esquina superior izquierda */}
-                <span className="absolute top-2 left-2 text-2xl select-none z-10 bg-white/80 rounded px-1">
+                <span className="absolute top-3 left-3 text-xl select-none z-10 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm font-bold text-[#6866D6]">
                   1️⃣{" "}
                   <span role="img" aria-label="cd">
                     💿
@@ -853,46 +854,51 @@ export function MusicBrowser() {
                   className="w-full h-full"
                 />
               </div>
-              <div className="p-4 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900 text-sm flex-1">
-                  {focusedVideo.name}
-                </h3>
+              <div className="p-4 flex items-center justify-between gap-3 bg-white">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-gray-900 text-sm truncate">
+                    {focusedVideo.name}
+                  </h3>
+                  <p className="text-[10px] text-neutral-500 truncate opacity-70">
+                    {focusedVideo.url}
+                  </p>
+                </div>
                 <button
                   onClick={handleRemoveFocusedVideo}
-                  className="p-1.5 bg-gray-100 hover:bg-red-50 text-neutral-600 hover:text-red-600 rounded-full transition-all cursor-pointer"
+                  className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-full transition-all cursor-pointer shadow-sm active:scale-95"
+                  title={language === "es" ? "Quitar" : "Remove"}
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
               </div>
             </div>
           ) : (
             <div
               onClick={() => handleClickPlaceholder(0)}
-              className="bg-neutral-50 rounded-xl border-2 border-dashed border-neutral-300 aspect-video flex items-center justify-center cursor-pointer"
+              className="bg-neutral-50/50 rounded-2xl border-2 border-dashed border-neutral-300 aspect-video flex items-center justify-center cursor-pointer hover:bg-neutral-100/50 transition-colors group"
             >
               <div className="text-center">
-                <div className="text-neutral-400 text-3xl mb-2">
+                <div className="text-neutral-400 text-3xl mb-2 group-hover:scale-110 transition-transform">
                   1️⃣{" "}
                   <span role="img" aria-label="cd">
                     💿
                   </span>
                 </div>
-                <span className="block text-neutral-500 text-sm font-medium">
+                <span className="block text-neutral-500 text-sm font-semibold">
                   {language === "es"
-                    ? "Cuando fijes un nuevo video musical"
-                    : "When you pin a new music video"}
-                </span>
-                <span className="block text-neutral-500 text-sm font-medium mt-1">
-                  {language === "es" ? "aparecerá aquí" : "it will appear here"}
+                    ? "Toca aquí para fijar un video"
+                    : "Tap here to pin a video"}
                 </span>
               </div>
             </div>
           )}
 
-          {/* Secundarios en fila, solo emojis */}
-          <div className="flex flex-row justify-between items-center gap-2 mt-2">
+          {/* Secondary slots in a row */}
+          <div className="grid grid-cols-3 gap-3">
             {[1, 2, 3].map((slotIndex) => {
               const slotVideo = pinnedVideos[slotIndex];
+              const videoId = slotVideo ? extractYoutubeId(slotVideo.url) : null;
+
               return (
                 <div
                   key={slotIndex}
@@ -901,15 +907,34 @@ export function MusicBrowser() {
                       ? () => handleClickPinned(slotIndex)
                       : () => handleClickPlaceholder(slotIndex)
                   }
-                  className={`flex-1 aspect-video flex flex-col items-center justify-center rounded-lg border-2 ${slotVideo ? "border-gray-200 bg-white cursor-pointer opacity-70 hover:opacity-100 transition-opacity" : "border-dashed border-neutral-300 bg-neutral-50 cursor-pointer"}`}
-                  style={{ minWidth: 0 }}
+                  className={`relative aspect-[4/3] flex flex-col items-center justify-center rounded-xl border-2 overflow-hidden transition-all ${
+                    slotVideo 
+                      ? "border-white shadow-md cursor-pointer active:scale-95 ring-1 ring-black/5" 
+                      : "border-dashed border-neutral-300 bg-neutral-50 cursor-pointer hover:bg-neutral-100"
+                  }`}
                 >
-                  <span className="text-2xl select-none">
-                    {["2️⃣", "3️⃣", "4️⃣"][slotIndex - 1]}{" "}
-                    <span role="img" aria-label="cd">
-                      💿
-                    </span>
-                  </span>
+                  {slotVideo && videoId ? (
+                    <>
+                      <img 
+                        src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                        alt={slotVideo.name}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/20" />
+                      <div className="z-10 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-0.5 shadow-sm text-sm font-bold text-[#6866D6]">
+                        {["2️⃣", "3️⃣", "4️⃣"][slotIndex - 1]}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center px-1">
+                      <span className="text-xl select-none block mb-1">
+                        {["2️⃣", "3️⃣", "4️⃣"][slotIndex - 1]}
+                      </span>
+                      <span className="text-[10px] text-neutral-400 font-medium">
+                        {language === "es" ? "Vacío" : "Empty"}
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })}
