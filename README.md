@@ -64,11 +64,13 @@ This section is for reference — you don't need to be a developer to use the ap
 
 - Import and export your pinned video collections as JSON from the browser console or by manipulating localStorage.
 
-- **Quick Links**: Floating buttons for essential services:
-  - **[Hoy & Today](https://home.hoy.today)**: Privacy-first, browser-based productivity dashboard for daily tasks, quick notes, and navigation — everything stored locally in your browser for a secure and distraction-free workflow ✍
+### 🔗 Quick Links
+Floating buttons for essential services:
+  - **[Home](https://home.hoy.today)**: Productivity dashboard for daily tasks and quick notes (everything stored locally in your browser for a secure and distraction-free workflow)
   - **[Emojis](https://emojis.hoy.today)**: Fast access to emoji library.
   - **Playlist**: You are here!
   - **[Minigame](https://minigame.hoy.today)**: Take a break and play Antipala Pro.
+  - **[Moovimiento](https://moovimiento.com/en)**: Visit Moovimiento.
 
 All changes are stored in your browser — no account or login required.
 

@@ -16,13 +16,12 @@ export function FloatingLinks() {
   return (
     <>
       {/* Right Side Button: Moovimiento only */}
-      {/* Right Side Button: Moovimiento only */}
       <div className="fixed bottom-8 right-8 flex gap-3 z-[110]">
         <a
           href={moovimientoUrl}
           className="p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 group cursor-pointer"
-          aria-label="Moovimiento"
-          title="Moovimiento"
+          aria-label={t("ariaMoovimiento")}
+          title={t("ariaMoovimiento")}
           target="_blank"
           rel="noreferrer"
         >
@@ -52,14 +51,13 @@ export function FloatingLinks() {
           <Smile className="w-6 h-6 text-zinc-900 dark:text-white group-hover:text-yellow-500 transition-colors" />
         </a>
 
-        {/* Playlist Button (Active, you are here!) */}
         <button
           disabled
-          className="p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full shadow-lg transition-all opacity-100 cursor-not-allowed group scale-110 ring-2 ring-[#6866D6]/50"
+          className="p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full shadow-lg transition-all opacity-50 cursor-not-allowed group"
           aria-label={t("ariaPlaylist")}
           title={t("ariaPlaylist")}
         >
-          <Disc3 className="w-6 h-6 text-[#6866D6] dark:text-white animate-spin-slow" />
+          <Disc3 className="w-6 h-6 text-zinc-400 dark:text-zinc-600" />
         </button>
 
         {/* Play Button */}

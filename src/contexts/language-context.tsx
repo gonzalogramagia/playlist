@@ -45,9 +45,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const translations: Record<Language, Record<string, string>> = {
     es: {
       ariaHome: "Ir a Hoy & Today",
-      ariaEmojis: "Ir a Mil Emojis",
+      ariaEmojis: "Ir a Emojis",
       ariaPlaylist: "Ya estás acá!",
-      ariaTraining: "Jugar Antipala",
+      ariaTraining: "Jugar Antipala Pro",
+      ariaMoovimiento: "Ir a Moovimiento",
       moreSongsIn: "Más canciones en",
       playlistUrlLabel: 'URL de "Más canciones en..."',
       searchPlaceholder: "Buscar canciones...",
@@ -79,9 +80,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     },
     en: {
       ariaHome: "Go to Hoy & Today",
-      ariaEmojis: "Go to Mil Emojis",
+      ariaEmojis: "Go to Emojis",
       ariaPlaylist: "You are here!",
-      ariaTraining: "Play Antipala",
+      ariaTraining: "Play Antipala Pro",
+      ariaMoovimiento: "Go to Moovimiento",
       moreSongsIn: "More songs on",
       playlistUrlLabel: '"More songs on..." URL',
       searchPlaceholder: "Search songs...",
@@ -138,8 +140,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       if (el) el.setAttribute(attr, content);
     };
 
-    updateMeta('meta[property="og:url"]', "https://home.hoy.today/");
-    updateMeta('meta[property="twitter:url"]', "https://home.hoy.today/");
+    updateMeta('meta[property="og:url"]', "https://playlist.hoy.today/");
+    updateMeta('meta[property="twitter:url"]', "https://playlist.hoy.today/");
     updateMeta('meta[name="description"]', description);
     updateMeta('meta[property="og:title"]', title);
     updateMeta('meta[property="og:description"]', description);
