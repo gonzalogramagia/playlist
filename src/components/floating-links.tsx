@@ -1,4 +1,3 @@
-// Archivo eliminado. Componente ya no es necesario.
 import { ClipboardClock, Smile, Disc3, Joystick, Zap } from "lucide-react";
 import { useLanguage } from "../contexts/language-context";
 export function FloatingLinks() {
@@ -8,10 +7,10 @@ export function FloatingLinks() {
   // Logic for URLs
   const getUrl = (baseUrl: string) => (isEnglish ? `${baseUrl}/en` : baseUrl);
 
-  const homeUrl = getUrl("https://hoy.today");
-  const emojisUrl = getUrl("https://milemojis.com");
-  // const musicUrl = getUrl("https://bien.estate") // You are here!
-  const playUrl = getUrl("https://antipala.pro");
+  const homeUrl = getUrl("https://home.hoy.today");
+  const emojisUrl = getUrl("https://emojis.hoy.today");
+  // const playlistUrl = getUrl("https://bien.estate") // You are here!
+  const playUrl = getUrl("https://minigame.hoy.today");
   const moovimientoUrl = getUrl("https://moovimiento.com");
 
   return (
@@ -53,12 +52,12 @@ export function FloatingLinks() {
           <Smile className="w-6 h-6 text-zinc-900 dark:text-white group-hover:text-yellow-500 transition-colors" />
         </a>
 
-        {/* Music Button (Active, you are here!) */}
+        {/* Playlist Button (Active, you are here!) */}
         <button
           disabled
           className="p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full shadow-lg transition-all opacity-100 cursor-not-allowed group scale-110 ring-2 ring-[#6866D6]/50"
-          aria-label={t("ariaMusic")}
-          title={t("ariaMusic")}
+          aria-label={t("ariaPlaylist")}
+          title={t("ariaPlaylist")}
         >
           <Disc3 className="w-6 h-6 text-[#6866D6] dark:text-white animate-spin-slow" />
         </button>

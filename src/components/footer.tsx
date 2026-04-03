@@ -1,4 +1,3 @@
-// Archivo eliminado. Componente ya no es necesario.
 
 export default function Footer() {
   return (

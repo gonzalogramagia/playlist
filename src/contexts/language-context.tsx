@@ -12,7 +12,6 @@ type Language = "es" | "en";
 
 interface LanguageContextType {
   language: Language;
-  mode: "music";
   t: (key: string) => string;
   setLanguage: (lang: Language) => void;
 }
@@ -47,7 +46,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     es: {
       ariaHome: "Ir a Hoy & Today",
       ariaEmojis: "Ir a Mil Emojis",
-      ariaMusic: "Ya estás acá!",
+      ariaPlaylist: "Ya estás acá!",
       ariaTraining: "Jugar Antipala",
       moreSongsIn: "Más canciones en",
       playlistUrlLabel: 'URL de "Más canciones en..."',
@@ -72,7 +71,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       headline_part1: "¡Tu banda sonora perfecta",
       headline_part2: "al instante!",
       quickTestPlaceholder: "Pega un link de YouTube (ej: youtu.be/QtKGMfeyPUE)",
-      searchSuffix: " Music",
+      searchSuffix: " Playlist",
       move: "Mover",
       slot: "Slot",
       swap: "Intercambiar",
@@ -81,7 +80,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     en: {
       ariaHome: "Go to Hoy & Today",
       ariaEmojis: "Go to Mil Emojis",
-      ariaMusic: "You are here!",
+      ariaPlaylist: "You are here!",
       ariaTraining: "Play Antipala",
       moreSongsIn: "More songs on",
       playlistUrlLabel: '"More songs on..." URL',
@@ -107,7 +106,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       headline_part1: "Your perfect soundtrack",
       headline_part2: "in a flash!",
       quickTestPlaceholder: "Paste a YouTube link (e.g., youtu.be/QtKGMfeyPUE)",
-      searchSuffix: " Music",
+      searchSuffix: " Playlist",
       move: "Move",
       slot: "Slot",
       swap: "Swap",
@@ -125,8 +124,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const title = "♪♫♪♫";
-    const description = `${translations.en.headline_part1} ${translations.en.headline_part2} | Music Mode 🎵`;
-    const fullImageUrl = "https://bien.estate/dj.png";
+    const description = `${translations.en.headline_part1} ${translations.en.headline_part2} | Playlist 🎵`;
+    const fullImageUrl = "https://playlist.hoy.today/dj.png";
 
     document.title = title;
 
@@ -139,8 +138,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       if (el) el.setAttribute(attr, content);
     };
 
-    updateMeta('meta[property="og:url"]', "https://bien.estate/en");
-    updateMeta('meta[property="twitter:url"]', "https://bien.estate/en");
+    updateMeta('meta[property="og:url"]', "https://home.hoy.today/");
+    updateMeta('meta[property="twitter:url"]', "https://home.hoy.today/");
     updateMeta('meta[name="description"]', description);
     updateMeta('meta[property="og:title"]', title);
     updateMeta('meta[property="og:description"]', description);
@@ -151,9 +150,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <LanguageContext.Provider
-      value={{ language, mode: "music", t, setLanguage }}
-    >
+    <LanguageContext.Provider value={{ language, t, setLanguage }}>
       {children}
     </LanguageContext.Provider>
   );

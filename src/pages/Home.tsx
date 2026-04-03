@@ -1,9 +1,9 @@
-import { MusicBrowser } from "../components/music-browser";
+import { PlaylistBrowser } from "../components/playlist-browser";
 
 export default function Home() {
   return (
     <section>
-      <MusicBrowser />
+      <PlaylistBrowser />
     </section>
   );
 }

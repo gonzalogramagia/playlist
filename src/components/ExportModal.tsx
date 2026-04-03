@@ -64,7 +64,7 @@ export default function ExportModal() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `music-${filename || "backup"}.json`;
+    a.download = `playlist-${filename || "backup"}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -99,7 +99,7 @@ export default function ExportModal() {
             </label>
             <div className="flex items-center">
               <div className="bg-zinc-100 dark:bg-zinc-800 border border-r-0 border-zinc-200 dark:border-zinc-700 rounded-l-md px-3 py-2 text-sm text-zinc-500">
-                music-
+                playlist-
               </div>
               <input
                 type="text"

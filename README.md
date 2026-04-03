@@ -1,8 +1,8 @@
-# 🎵 Music
+# 🎵 Playlist
 
 **A personal pinned video player for your favorite YouTube music & content.**
 
-"Music" lets you quickly pin and manage your most-played videos with an intuitive 4-slot player (1 main + 3 secondary). Each slot is clearly numbered (1️⃣, 2️⃣, 3️⃣, 4️⃣) for instant access. Empty slots show a number emoji and a 💿 (CD) icon.
+"Playlist" lets you quickly pin and manage your most-played videos with an intuitive 4-slot player (1 main + 3 secondary). Each slot is clearly numbered (1️⃣, 2️⃣, 3️⃣, 4️⃣) for instant access. Empty slots show a number emoji and a 💿 (CD) icon.
 
 ---
 
@@ -26,7 +26,6 @@
 - **▶️ Embedded Playback**: Watch videos directly in the app with YouTube embeds.
 - **💾 Persistent Storage**: Your pinned videos are automatically saved and restored.
 - **🎨 Clean UI**: Minimal, distraction-free design focused on video playback.
-- **🎯 Dual Modes**: Music and Study modes with separate pinned video collections.
 
 ---
 
@@ -65,32 +64,15 @@ This section is for reference — you don't need to be a developer to use the ap
 
 - Import and export your pinned video collections as JSON from the browser console or by manipulating localStorage.
 
-### 🧭 Navigation
-
-Quick links at the bottom left take you to:
-
-- **Home** (clock icon) → hoy.today
-- **Emojis** (smile icon) → milemojis.com
-- **Music** (CD icon) → You are here!
-- **Training** (joystick icon) → antipala.pro
-- **Moovimiento** (zap icon) → moovimiento.com
+- **Quick Links**: Floating buttons for essential services:
+  - **[Hoy & Today](https://home.hoy.today)**: Privacy-first, browser-based productivity dashboard for daily tasks, quick notes, and navigation — everything stored locally in your browser for a secure and distraction-free workflow ✍
+  - **[Emojis](https://emojis.hoy.today)**: Fast access to emoji library.
+  - **Playlist**: You are here!
+  - **[Minigame](https://minigame.hoy.today)**: Take a break and play Antipala Pro.
 
 All changes are stored in your browser — no account or login required.
 
----
 
-## 🎯 Dual Modes: Music & Study
-
-Switch between two completely separate environments, each with its own pinned videos:
-
-- **Music Mode**: Your personal music library with curated default videos (Diplo as main and Zero Distractions as secondary by default).
-- **Study Mode**: A focused environment with study-oriented content and a study-themed interface.
-
-Use the mode toggle in the header (🎵 for Music, 📚 for Study) to switch instantly. Settings and pinned videos are kept separate per mode. Exported backups include the active mode in the filename (`music-...` or `study-...`).
-
-Enjoy switching between vibes — music when you want to relax, study when you want to focus.
-
----
 
 ## 📄 License
 

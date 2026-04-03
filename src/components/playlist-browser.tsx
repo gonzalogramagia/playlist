@@ -75,11 +75,11 @@ function SortableVideoItem({
   );
 }
 
-export function MusicBrowser() {
+export function PlaylistBrowser() {
   const { videos, addVideo, updateVideo, deleteVideo, reorderVideos } =
     useVideos();
   const { toast } = useToast();
-  const { t, language, mode } = useLanguage();
+  const { t, language } = useLanguage();
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -133,7 +133,7 @@ export function MusicBrowser() {
   useEffect(() => {
     setPinnedHydrated(false);
 
-    const saved = localStorage.getItem(`config-pinned-videos_${mode}`);
+    const saved = localStorage.getItem(`config-pinned-videos_playlist`);
     if (saved) {
       try {
         let parsed = JSON.parse(saved);
@@ -167,24 +167,24 @@ export function MusicBrowser() {
       setPinnedVideos([null, null, null, null]);
     }
     setPinnedHydrated(true);
-  }, [mode]);
+  }, []);
 
   useEffect(() => {
     if (!pinnedHydrated) return;
     localStorage.setItem(
-      `config-pinned-videos_${mode}`,
+      `config-pinned-videos_playlist`,
       JSON.stringify(pinnedVideos),
     );
-  }, [pinnedVideos, mode, pinnedHydrated]);
+  }, [pinnedVideos, pinnedHydrated]);
 
   useEffect(() => {
     if (!pinnedHydrated) return;
     localStorage.setItem(
-      `config-pinned-focus-index_${mode}`,
+      `config-pinned-focus-index_playlist`,
       String(focusIndex),
     );
     setFocusedEditUrl("");
-  }, [focusIndex, mode, pinnedHydrated]);
+  }, [focusIndex, pinnedHydrated]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -199,8 +199,8 @@ export function MusicBrowser() {
 
   // Load hidden tags and playlist URL scoped by interface mode
   useEffect(() => {
-    const savedTags = localStorage.getItem(`config-hidden-tags_${mode}`);
-    const savedUrl = localStorage.getItem(`config-playlist-url_${mode}`);
+    const savedTags = localStorage.getItem(`config-hidden-tags_playlist`);
+    const savedUrl = localStorage.getItem(`config-playlist-url_playlist`);
 
     if (savedTags) {
       try {
@@ -219,7 +219,7 @@ export function MusicBrowser() {
         "https://youtube.com/playlist?list=PL-0_mv1k_D3IR4LDICAe3TZH4xqCX9xsr",
       );
     }
-  }, [mode]);
+  }, []);
 
   // Filter tags to exclude hidden ones
   const allTags = useMemo(() => {
@@ -527,7 +527,7 @@ export function MusicBrowser() {
       <>
         <div className="flex flex-col md:flex-row items-center justify-center pt-0 pb-0 md:pt-0 md:pb-0 gap-0 md:gap-1 max-w-4xl mx-auto">
           <img
-            src={"/dj.png"}
+            src={`${import.meta.env.BASE_URL}dj.png`}
             alt={"DJ"}
             onClick={() =>
               window.open("https://youtu.be/dQw4w9WgXcQ", "_blank")
@@ -768,8 +768,8 @@ export function MusicBrowser() {
                   </div>
                   <span className="block text-base text-neutral-500 font-medium">
                     {language === "es"
-                      ? "Cuando fijes un nuevo video musical"
-                      : "When you pin a new music video"}
+                      ? "Cuando fijes un nuevo video de la playlist"
+                      : "When you pin a new playlist video"}
                   </span>
                   <span className="block text-base text-neutral-500 font-medium mt-1">
                     {language === "es"
@@ -826,8 +826,8 @@ export function MusicBrowser() {
                       </div>
                       <span className="block text-xs text-neutral-500 font-medium">
                         {language === "es"
-                          ? "Cuando fijes un nuevo video musical"
-                          : "When you pin a new music video"}
+                          ? "Cuando fijes un nuevo video de la playlist"
+                          : "When you pin a new playlist video"}
                       </span>
                       <span className="block text-xs text-neutral-500 font-medium mt-0.5">
                         {language === "es"

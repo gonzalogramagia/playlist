@@ -1,4 +1,3 @@
-// Archivo eliminado. Componente ya no es necesario.
 
 import React, { useState, useEffect } from "react";
 import { Video } from "../contexts/video-context";
