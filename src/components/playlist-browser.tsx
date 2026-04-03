@@ -768,8 +768,8 @@ export function PlaylistBrowser() {
                   </div>
                   <span className="block text-base text-neutral-500 font-medium">
                     {language === "es"
-                      ? "Cuando fijes un nuevo video de la playlist"
-                      : "When you pin a new playlist video"}
+                      ? "Cuando fijes un nuevo video"
+                      : "When you pin a new video"}
                   </span>
                   <span className="block text-base text-neutral-500 font-medium mt-1">
                     {language === "es"
@@ -826,8 +826,8 @@ export function PlaylistBrowser() {
                       </div>
                       <span className="block text-xs text-neutral-500 font-medium">
                         {language === "es"
-                          ? "Cuando fijes un nuevo video de la playlist"
-                          : "When you pin a new playlist video"}
+                          ? "Cuando fijes un nuevo video"
+                          : "When you pin a new video"}
                       </span>
                       <span className="block text-xs text-neutral-500 font-medium mt-0.5">
                         {language === "es"

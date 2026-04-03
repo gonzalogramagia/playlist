@@ -21,7 +21,7 @@
   - 1 main video slot (full display, slot 1️⃣)
   - 3 secondary slots (slots 2️⃣, 3️⃣, 4️⃣)
   - All slots show a number emoji and 💿 (CD) icon when empty
-- **🔗 Quick Add & Overwrite**: Paste a YouTube URL, select a slot (1-4), and instantly pin or replace a video. Invalid links show a clear ❌ error notification.
+- **🔗 Quick Add & Overwrite**: Paste a YouTube URL, select a slot (1-4), and instantly pin or replace a video.
 - **🌍 Internationalization**: Fully localized interface with English (EN) and Spanish (ES) support.
 - **▶️ Embedded Playback**: Watch videos directly in the app with YouTube embeds.
 - **💾 Persistent Storage**: Your pinned videos are automatically saved and restored.
@@ -45,12 +45,12 @@ This section is for reference — you don't need to be a developer to use the ap
 
 ### 🌐 Switching language
 
-- The app auto-detects your language, or you can switch between English (EN) and Spanish (ES) in your browser settings.
+- Switch between English (EN) and Spanish (ES) by adding or removing `/en` at the end of the URL.
 
 ### 📍 Pinning & Managing Videos
 
 - Paste a YouTube URL and select a slot (1️⃣, 2️⃣, 3️⃣, 4️⃣) to pin or replace a video in that position.
-- The app validates the link and updates the chosen slot. If the link is invalid, a red ❌ notification appears at the top.
+- The app validates the link and updates the chosen slot.
 - You can always overwrite any slot—there's no limit to how many times you can change your pinned videos.
 
 ### 🎬 Managing Your Player
@@ -66,7 +66,7 @@ This section is for reference — you don't need to be a developer to use the ap
 
 ### 🔗 Quick Links
 Floating buttons for essential services:
-  - **[Home](https://home.hoy.today)**: Productivity dashboard for daily tasks and quick notes (everything stored locally in your browser for a secure and distraction-free workflow)
+  - **[Home](https://home.hoy.today)**: Productivity dashboard for daily tasks and quick notes.
   - **[Emojis](https://emojis.hoy.today)**: Fast access to emoji library.
   - **Playlist**: You are here!
   - **[Minigame](https://minigame.hoy.today)**: Take a break and play Antipala Pro.
