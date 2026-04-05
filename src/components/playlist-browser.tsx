@@ -75,9 +75,132 @@ function SortableVideoItem({
   );
 }
 
+function VideoNote({
+  url,
+  videos,
+  updateNote,
+  editable,
+  language,
+}: {
+  url: string;
+  videos: any[];
+  updateNote: (idOrUrl: string, note: string) => void;
+  editable: boolean;
+  language: "es" | "en";
+}) {
+  const [isManualExpanded, setIsManualExpanded] = useState(false);
+  const [isXl, setIsXl] = useState(typeof window !== "undefined" ? window.innerWidth >= 1280 : true);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsXl(window.innerWidth >= 1280);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const videoInLibrary = (videos || []).find((v) => {
+    if (!v || !v.url) return false;
+    const vId = extractYoutubeId(v.url);
+    const uId = extractYoutubeId(url);
+    return (vId && uId && vId === uId) || v.url === url;
+  });
+
+  const note = videoInLibrary?.note || "";
+
+  // Helper inside component to match context helper
+  function extractYoutubeId(u: string): string | null {
+    if (!u) return null;
+    try {
+      const uObj = new URL(u.startsWith("http") ? u : "https://" + u);
+      if (
+        uObj.hostname.includes("youtube.com") ||
+        uObj.hostname.includes("youtu.be")
+      ) {
+        return uObj.searchParams.get("v") || uObj.pathname.split("/").pop() || null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
+  const handleExpand = () => {
+    if (!editable) return;
+    setIsManualExpanded(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setIsManualExpanded(false);
+    }, 3000);
+  };
+
+  const shouldBeExpanded = editable && (note.length > 0 || isManualExpanded || !isXl);
+
+  if (editable) {
+    if (!shouldBeExpanded) {
+      return (
+        <button
+          onClick={handleExpand}
+          className="w-10 h-10 bg-white rounded-xl border-2 border-gray-100 shadow-sm flex items-center justify-center text-gray-400 hover:text-[#6866D6] hover:border-[#6866D6]/30 hover:shadow-md transition-all group shrink-0 cursor-pointer pointer-events-auto"
+          title={language === "es" ? "Escribir nota" : "Write note"}
+        >
+          <Pencil className="w-5 h-5 group-hover:scale-110 transition-transform" />
+        </button>
+      );
+    }
+
+    return (
+      <div className="w-full xl:w-44 2xl:w-56 h-48 xl:h-64 2xl:h-80 bg-white rounded-2xl border-2 border-gray-100 shadow-sm p-4 flex flex-col gap-2 overflow-hidden animate-in fade-in zoom-in slide-in-from-right-4 duration-300">
+        <h4 className="font-bold text-gray-700 text-[11px] uppercase tracking-wider flex items-center justify-between gap-1.5 opacity-60">
+          <div className="flex items-center gap-1.5">
+            <Pencil className="w-3 h-3" />
+            {language === "es" ? "Nota Editable" : "Editable Note"}
+          </div>
+          {note.length === 0 && (
+             <div className="w-1.5 h-1.5 rounded-full bg-[#6866D6] animate-pulse" />
+          )}
+        </h4>
+        <textarea
+          autoFocus
+          value={note}
+          onChange={(e) => {
+            updateNote(url, e.target.value);
+            if (timerRef.current) clearTimeout(timerRef.current);
+          }}
+          onBlur={() => {
+             if (note.length === 0) setIsManualExpanded(false);
+          }}
+          placeholder={
+            language === "es" ? "Escribe aquí..." : "Write here..."
+          }
+          className="flex-1 w-full bg-gray-50/30 rounded-xl p-3 text-xs text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-[#6866D6] border border-gray-100 transition-all placeholder:text-neutral-400"
+        />
+      </div>
+    );
+  }
+
+  if (!note) return null;
+
+  return (
+    <div className="w-full h-full bg-white rounded-xl border border-gray-100 shadow-sm p-3 overflow-y-auto scrollbar-hide min-h-[5rem] group-hover:border-[#6866D6]/30 transition-colors">
+      <h4 className="font-bold text-neutral-400 text-[8px] uppercase tracking-widest mb-1.5 line-clamp-1 opacity-50">
+        {language === "es" ? "Vista de la Nota" : "Note View"}
+      </h4>
+      <p className="text-[10px] text-gray-500 leading-relaxed break-words line-clamp-4">
+        {note}
+      </p>
+    </div>
+  );
+}
+
 export function PlaylistBrowser() {
-  const { videos, addVideo, updateVideo, deleteVideo, reorderVideos } =
-    useVideos();
+  const {
+    videos,
+    addVideo,
+    updateVideo,
+    deleteVideo,
+    reorderVideos,
+    updateNote,
+  } = useVideos();
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const [search, setSearch] = useState("");
@@ -373,7 +496,7 @@ export function PlaylistBrowser() {
     // Solo agregar a la lista principal si es el slot 1
     if (
       position === 1 &&
-      !videos.some((v) => extractYoutubeId(v.url) === videoId)
+      !videos.some((v) => v && v.url && extractYoutubeId(v.url) === videoId)
     ) {
       addVideo({
         name: `Video ${position}`,
@@ -405,13 +528,23 @@ export function PlaylistBrowser() {
       return;
     }
 
-    const idx = pinPosition - 1;
-
-    if (pinnedVideos[idx] && extractYoutubeId(pinnedVideos[idx]!.url) === videoId) {
+    // Check if video is already pinned ANYWHERE
+    const existingIdx = pinnedVideos.findIndex(
+      (v) => v && extractYoutubeId(v.url) === videoId
+    );
+    const slotEmojis = ["1⃣", "2⃣", "3⃣", "4⃣"];
+    if (existingIdx !== -1) {
+      toast(
+        language === "es"
+          ? `⚠️ El video ya está fijado en el slot ${slotEmojis[existingIdx]}`
+          : `⚠️ Video is already pinned in slot ${slotEmojis[existingIdx]}`,
+        "error"
+      );
       setPinUrl("");
       return;
     }
 
+    const idx = pinPosition - 1;
     if (pinnedVideos[idx]) {
       setConfirmReplaceModal({
         isOpen: true,
@@ -437,6 +570,7 @@ export function PlaylistBrowser() {
       return;
     }
     if (focusedEditUrl === currentUrl) {
+      setFocusedEditUrl("");
       return;
     }
 
@@ -446,28 +580,29 @@ export function PlaylistBrowser() {
         language === "es"
           ? "❌ Link de YouTube inválido"
           : "❌ Invalid YouTube link",
-        "error",
+        "error"
       );
+      setFocusedEditUrl("");
       return;
     }
 
-    const alreadyPinnedInAnotherSlot = pinnedVideos.some((video, index) => {
-      if (!video || index === slotIndex) return false;
-      return extractYoutubeId(video.url) === videoId;
-    });
-
-    if (alreadyPinnedInAnotherSlot) {
+    // Check if ALREADY PINNED in a DIFFERENT slot
+    const existingIdx = pinnedVideos.findIndex(
+      (v, i) => i !== slotIndex && v && extractYoutubeId(v.url) === videoId
+    );
+    const slotEmojis = ["1⃣", "2⃣", "3⃣", "4⃣"];
+    if (existingIdx !== -1) {
       toast(
         language === "es"
-          ? "Ese video ya está agregado"
-          : "This video is already added",
-        "error",
+          ? `⚠️ El video ya está fijado en el slot ${slotEmojis[existingIdx]}`
+          : `⚠️ Video is already pinned in slot ${slotEmojis[existingIdx]}`,
+        "error"
       );
+      setFocusedEditUrl("");
       return;
     }
 
-    setPinnedVideos((prev) => prev.filter((_, i) => i !== slotIndex));
-
+    executeReplacePin(videoId, slotIndex + 1);
     setFocusedEditUrl("");
   };
 
@@ -489,14 +624,6 @@ export function PlaylistBrowser() {
     setTimeout(() => {
       pinUrlInputRef.current?.focus();
     }, 0);
-  };
-
-  const handleRemoveFocusedVideo = () => {
-    const next = [...pinnedVideos];
-    next[focusIndex] = null;
-
-    setPinnedVideos(next);
-    setFocusedEditUrl("");
   };
 
   const focusedVideo = pinnedVideos[focusIndex];
@@ -593,7 +720,7 @@ export function PlaylistBrowser() {
               </select>
               <button
                 onClick={handlePinUrlSubmit}
-                className="md:hidden flex-1 px-6 py-3 text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-md transition-all bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer"
+                className="xl:hidden flex-1 px-6 py-3 text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-md transition-all bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer"
               >
                 <Pin className="w-5 h-5" />
                 {language === "es" ? "Fijar" : "Pin"}
@@ -601,18 +728,26 @@ export function PlaylistBrowser() {
             </div>
             <button
               onClick={handlePinUrlSubmit}
-              className="hidden md:flex order-3 px-6 py-3 text-white rounded-lg font-bold items-center justify-center gap-2 shadow-md transition-all bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer md:w-auto"
+              className="hidden xl:flex order-3 px-6 py-3 text-white rounded-lg font-bold items-center justify-center gap-2 shadow-md transition-all bg-[#6866D6] hover:bg-[#5856b3] hover:shadow-lg cursor-pointer xl:w-auto"
             >
               <Pin className="w-5 h-5" />
               {language === "es" ? "Fijar" : "Pin"}
             </button>
           </div>
           {/* Ejemplos de links para testear */}
-          <div className="flex flex-wrap gap-2 mt-2 items-center justify-center md:justify-start bg-neutral-50/80 rounded px-2 py-1 border border-neutral-100">
+          <div className="flex flex-wrap gap-2 mt-2 items-center justify-center xl:justify-start bg-neutral-50/80 rounded px-2 py-1 border border-neutral-100">
             <span className="text-xs text-neutral-500 font-normal mr-2">
-              {language === "es"
-                ? "Link para testeo rápido:"
-                : "Quick test link:"}
+              {language === "es" ? (
+                <>
+                  <span className="xl:hidden">Link</span>
+                  <span className="hidden xl:inline">Links</span> para testeo rápido:
+                </>
+              ) : (
+                <>
+                  Quick test <span className="xl:hidden">link</span>
+                  <span className="hidden xl:inline">links</span>:
+                </>
+              )}
             </span>
             <input
               type="text"
@@ -638,10 +773,33 @@ export function PlaylistBrowser() {
 
       <div className="mb-6">
         {/* Desktop: main slot + 3 stacked secondary slots */}
-        <div className="hidden md:flex items-stretch gap-6">
-          <div className="flex-1">
+        <div className="hidden xl:flex items-stretch gap-6 relative">
+          {/* Slot 1 Area */}
+          <div className="flex-1 relative">
+            {/* [DESKTOP] Slot 1 Note - Positioned LEFT SIDEBAR (tightly attached to video) */}
+            {focusedVideo && (
+              <div className="hidden xl:block absolute right-full mr-1 top-0 z-40 pointer-events-auto cursor-pointer">
+                <VideoNote
+                  url={focusedVideo.url}
+                  videos={videos}
+                  updateNote={updateNote}
+                  editable={true}
+                  language={language}
+                />
+              </div>
+            )}
             {focusedVideo ? (
               <div className="bg-white border-2 border-gray-200 overflow-hidden rounded-2xl shadow-lg">
+                {/* [MD/LG Desktop] Inline note if not XL sidebar */}
+                <div className="xl:hidden p-3 bg-gray-50 border-b border-gray-100 h-32">
+                   <VideoNote
+                    url={focusedVideo.url}
+                    videos={videos}
+                    updateNote={updateNote}
+                    editable={true}
+                    language={language}
+                  />
+                </div>
                 <div className="h-96 bg-gray-100 relative">
                   <iframe
                     width="100%"
@@ -702,16 +860,13 @@ export function PlaylistBrowser() {
                   />
                   {/* Selector para mover/intercambiar el video principal */}
                   <select
-                    className="ml-2 pl-1 pr-1 py-2 rounded border border-gray-300 bg-gray-50 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all appearance-none relative cursor-pointer"
+                    className="ml-2 pl-1.5 pr-6 py-1.5 rounded border border-gray-200 bg-gray-50 text-[10px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all appearance-none relative cursor-pointer min-w-[72px] xl:min-w-[105px] max-w-[88px] xl:max-w-[125px]"
                     style={{
                       backgroundImage:
                         "url('data:image/svg+xml;utf8,<svg fill=\'none\' stroke=\'%23666\' stroke-width=\'2\' viewBox=\'0 0 24 24\' xmlns=\'http://www.w3.org/2000/svg\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19 9l-7 7-7-7\'></path></svg>')",
                       backgroundRepeat: "no-repeat",
-                      backgroundPosition: "right 0.3em center",
-                      backgroundSize: "0.9em 0.9em",
-                      minWidth: "48px",
-                      maxWidth: "70px",
-                      width: "auto",
+                      backgroundPosition: "right 0.4rem center",
+                      backgroundSize: "0.8rem 0.8rem",
                     }}
                     title="Mover o intercambiar video principal"
                     value=""
@@ -738,10 +893,7 @@ export function PlaylistBrowser() {
                     }}
                   >
                     <option value="" disabled style={{ fontWeight: "bold" }}>
-                      <span style={{ fontWeight: "bold" }}>
-                        {t("move").charAt(0).toUpperCase() + t("move").slice(1)}
-                      </span>{" "}
-                      ➡
+                      {t("move").toUpperCase()} ➡
                     </option>
                     {[1, 2, 3].map((i) => {
                       const label = `${t("slot").charAt(0).toUpperCase() + t("slot").slice(1)} ${i + 1} ${pinnedVideos[i] ? `(${t("swap").charAt(0).toUpperCase() + t("swap").slice(1)})` : `(${t("empty").charAt(0).toUpperCase() + t("empty").slice(1)})`}`;
@@ -781,8 +933,8 @@ export function PlaylistBrowser() {
             )}
           </div>
 
-          <div className="relative">
-            <div className="w-64 flex flex-col gap-4 justify-end">
+          <div className="w-fit min-w-[16rem] shrink-0">
+            <div className="flex flex-col gap-3 justify-end h-full">
               {[1, 2, 3].map((slotIndex) => {
                 const slotVideo = pinnedVideos[slotIndex];
 
@@ -791,20 +943,33 @@ export function PlaylistBrowser() {
                     <div
                       key={slotIndex}
                       onClick={() => handleClickPinned(slotIndex)}
-                      className="cursor-pointer transition-opacity opacity-60 hover:opacity-95"
+                      className="flex items-center gap-3 w-full group relative"
                     >
-                      <div className="bg-white border border-gray-200 overflow-hidden rounded-lg shadow-sm">
-                        <div className="aspect-video bg-gray-100 relative">
-                          <iframe
-                            width="100%"
-                            height="100%"
-                            src={`https://www.youtube.com/embed/${extractYoutubeId(slotVideo.url)}?modestbranding=1`}
-                            frameBorder="0"
-                            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            className="w-full h-full pointer-events-none"
-                          />
+                      <div className="w-48 lg:w-56 xl:w-64 shrink-0 cursor-pointer transition-opacity opacity-60 group-hover:opacity-100">
+                        <div className="bg-white border border-gray-200 overflow-hidden rounded-lg shadow-sm">
+                          <div className="aspect-video bg-gray-100 relative">
+                            <iframe
+                              width="100%"
+                              height="100%"
+                              src={`https://www.youtube.com/embed/${extractYoutubeId(slotVideo.url)}?modestbranding=1`}
+                              frameBorder="0"
+                              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              className="w-full h-full pointer-events-none"
+                            />
+                          </div>
                         </div>
+                      </div>
+                      
+                      {/* [DESKTOP] Preview note - Positioned RIGHT SIDEBAR (outside layout) */}
+                      <div className="hidden xl:block absolute left-full ml-4 top-0 bottom-0 w-32 2xl:w-44 py-0.5 z-20">
+                        <VideoNote
+                          url={slotVideo.url}
+                          videos={videos}
+                          updateNote={updateNote}
+                          editable={false}
+                          language={language}
+                        />
                       </div>
                     </div>
                   );
@@ -812,28 +977,24 @@ export function PlaylistBrowser() {
 
                 // Placeholder con emoji de número y CD
                 return (
-                  <div
-                    key={slotIndex}
-                    onClick={() => handleClickPlaceholder(slotIndex)}
-                    className="bg-neutral-50 rounded-lg border-2 border-dashed border-neutral-300 aspect-video flex items-center justify-center cursor-pointer"
-                  >
-                    <div className="text-center px-2">
-                      <div className="text-2xl mb-1 text-neutral-400">
-                        {["2️⃣", "3️⃣", "4️⃣"][slotIndex - 1]}{" "}
-                        <span role="img" aria-label="cd">
-                          💿
+                  <div key={slotIndex} className="w-[16rem]">
+                    <div
+                      onClick={() => handleClickPlaceholder(slotIndex)}
+                      className="bg-neutral-50 rounded-lg border-2 border-dashed border-neutral-300 aspect-video flex items-center justify-center cursor-pointer"
+                    >
+                      <div className="text-center px-2">
+                        <div className="text-xl mb-1 text-neutral-400">
+                          {["2️⃣", "3️⃣", "4️⃣"][slotIndex - 1]}{" "}
+                          <span role="img" aria-label="cd">
+                            💿
+                          </span>
+                        </div>
+                        <span className="block text-[10px] text-neutral-500 font-medium">
+                          {language === "es"
+                            ? "Cuando fijes un nuevo video"
+                            : "When you pin a new video"}
                         </span>
                       </div>
-                      <span className="block text-xs text-neutral-500 font-medium">
-                        {language === "es"
-                          ? "Cuando fijes un nuevo video"
-                          : "When you pin a new video"}
-                      </span>
-                      <span className="block text-xs text-neutral-500 font-medium mt-0.5">
-                        {language === "es"
-                          ? "aparecerá aquí"
-                          : "it will appear here"}
-                      </span>
                     </div>
                   </div>
                 );
@@ -842,8 +1003,8 @@ export function PlaylistBrowser() {
           </div>
         </div>
 
-        {/* Mobile: Pinned Videos Layout */}
-        <div className="md:hidden space-y-4">
+        {/* Mobile & Tablet & Small Desktop: Pinned Videos Layout */}
+        <div className="xl:hidden space-y-4">
           {focusedVideo ? (
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden ring-1 ring-black/5">
               <div className="aspect-video bg-gray-100 relative">
@@ -863,22 +1024,113 @@ export function PlaylistBrowser() {
                   className="w-full h-full"
                 />
               </div>
-              <div className="p-4 flex items-center justify-between gap-3 bg-white">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-gray-900 text-sm truncate">
-                    {focusedVideo.name}
-                  </h3>
-                  <p className="text-[10px] text-neutral-500 truncate opacity-70">
-                    {focusedVideo.url}
-                  </p>
+              
+              {/* Mobile Note - Slot 1: Full width and taller */}
+              <div className="p-3 bg-gray-50/50 border-b border-gray-100 h-48">
+                <VideoNote
+                  url={focusedVideo.url}
+                  videos={videos}
+                  updateNote={updateNote}
+                  editable={true}
+                  language={language}
+                />
+              </div>
+
+              <div className="p-4 bg-white border-t border-gray-50">
+                <div className="flex items-center justify-between gap-3">
+                  {/* Delete button with double-check logic */}
+                  <button
+                    onClick={() => {
+                      const isEdited =
+                        focusedEditUrl !== "" &&
+                        focusedEditUrl !== focusedVideo.url;
+                      if (isEdited) {
+                        handleFocusedUrlSubmit(focusIndex, focusedVideo.url);
+                      } else {
+                        // doble confirmación visual
+                        if (!confirmRemovePinned) {
+                          setConfirmRemovePinned(1);
+                          if (confirmRemovePinnedTimeout.current)
+                            clearTimeout(confirmRemovePinnedTimeout.current);
+                          confirmRemovePinnedTimeout.current = setTimeout(
+                            () => setConfirmRemovePinned(null),
+                            1500,
+                          );
+                        } else if (confirmRemovePinned === 1) {
+                          // Eliminar
+                          const next = [...pinnedVideos];
+                          next[focusIndex] = null;
+                          setPinnedVideos(next);
+                          setFocusedEditUrl("");
+                          setConfirmRemovePinned(null);
+                          if (confirmRemovePinnedTimeout.current)
+                            clearTimeout(confirmRemovePinnedTimeout.current);
+                        }
+                      }
+                    }}
+                    className={`p-2 rounded-full transition-all cursor-pointer flex-shrink-0 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700`}
+                  >
+                    {confirmRemovePinned === 1 ? (
+                      <Check size={18} style={{ opacity: 0.7 }} />
+                    ) : (
+                      <X size={18} />
+                    )}
+                  </button>
+
+                  <input
+                    type="text"
+                    value={
+                      focusedEditUrl === "" ? focusedVideo.url : focusedEditUrl
+                    }
+                    onChange={(e) => setFocusedEditUrl(e.target.value)}
+                    className="text-gray-600 text-[10px] sm:text-xs flex-1 bg-gray-50 px-2 py-2 rounded border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all truncate"
+                  />
+
+                  {/* Move/Swap selector */}
+                  <select
+                    className="ml-2 pl-1.5 pr-6 py-1.5 rounded border border-gray-200 bg-gray-50 text-[10px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all appearance-none relative cursor-pointer min-w-[72px] xl:min-w-[105px] max-w-[88px] xl:max-w-[125px]"
+                    style={{
+                      backgroundImage:
+                        "url('data:image/svg+xml;utf8,<svg fill=\'none\' stroke=\'%23666\' stroke-width=\'2\' viewBox=\'0 0 24 24\' xmlns=\'http://www.w3.org/2000/svg\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19 9l-7 7-7-7\'></path></svg>')",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 0.4rem center",
+                      backgroundSize: "0.8rem 0.8rem",
+                    }}
+                    title="Mover o intercambiar video principal"
+                    value=""
+                    onChange={(e) => {
+                      const slot = Number(e.target.value);
+                      if (![1, 2, 3].includes(slot)) return;
+                      setPinnedVideos((prev) => {
+                        const next = [...prev];
+                        if (!next[0]) return prev;
+                        if (!next[slot]) {
+                          next[slot] = next[0];
+                          next[0] = null;
+                        } else {
+                          const temp = next[0];
+                          next[0] = next[slot];
+                          next[slot] = temp;
+                        }
+                        return next;
+                      });
+                      setFocusIndex(0);
+                      e.target.value = "";
+                    }}
+                  >
+                    <option value="" disabled>
+                      {t("move").charAt(0).toUpperCase() + t("move").slice(1)} ➡
+                    </option>
+                    {[1, 2, 3].map((i) => {
+                      const label = `${t("slot").charAt(0).toUpperCase() + t("slot").slice(1)} ${i + 1} ${pinnedVideos[i] ? `(${t("swap").charAt(0).toUpperCase() + t("swap").slice(1)})` : `(${t("empty").charAt(0).toUpperCase() + t("empty").slice(1)})`}`;
+                      return (
+                        <option key={i} value={i}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </div>
-                <button
-                  onClick={handleRemoveFocusedVideo}
-                  className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-full transition-all cursor-pointer shadow-sm active:scale-95"
-                  title={language === "es" ? "Quitar" : "Remove"}
-                >
-                  <X size={18} />
-                </button>
               </div>
             </div>
           ) : (

@@ -13,6 +13,7 @@ export interface Video {
   url: string;
   tags: string[];
   embedUrl?: string;
+  note?: string;
 }
 
 const STORAGE_KEY = "pinned-videos-v2";
@@ -24,39 +25,38 @@ type VideoContextType = {
   deleteVideo: (id: string) => void;
   reorderVideos: (newOrder: Video[]) => void;
   getEmbedUrl: (url: string) => string | undefined;
+  updateNote: (idOrUrl: string, note: string) => void;
 };
 
 const VideoContext = createContext<VideoContextType | undefined>(undefined);
 
-const getEmbedUrl = (url: string): string | undefined => {
+const extractYoutubeId = (url: string): string | undefined => {
   try {
     let videoId = "";
     if (url.includes("youtube.com/watch")) {
       const urlObj = new URL(url);
       videoId = urlObj.searchParams.get("v") || "";
     } else if (url.includes("youtu.be/")) {
-      // Handle https://youtu.be/ID?t=123
       const parts = url.split("youtu.be/");
       if (parts.length > 1) {
         videoId = parts[1].split("?")[0];
       }
     }
-
-    // Final sanity check for weird inputs like https://youtu.be/watch?v=ID which shouldn't happen but user had it
     if (!videoId && url.includes("v=")) {
       try {
         const urlObj = new URL(url);
         videoId = urlObj.searchParams.get("v") || "";
       } catch (e) {}
     }
-
-    if (videoId) {
-      return `https://www.youtube.com/embed/${videoId}`;
-    }
+    return videoId || undefined;
   } catch (e) {
-    console.error("Error parsing YouTube URL", e);
+    return undefined;
   }
-  return undefined;
+};
+
+const getEmbedUrl = (url: string): string | undefined => {
+  const videoId = extractYoutubeId(url);
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : undefined;
 };
 
 export const VideoProvider = ({ children }: { children: ReactNode }) => {
@@ -79,9 +79,17 @@ export const VideoProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
   }, []);
 
-  const saveVideos = (newVideos: Video[]) => {
-    setVideos(newVideos);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newVideos));
+  const saveVideos = (newVideos: Video[] | ((prev: Video[]) => Video[])) => {
+    if (typeof newVideos === "function") {
+      setVideos((prev) => {
+        const next = newVideos(prev);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        return next;
+      });
+    } else {
+      setVideos(newVideos);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newVideos));
+    }
   };
 
   const addVideo = (videoData: Omit<Video, "id" | "embedUrl">) => {
@@ -97,11 +105,12 @@ export const VideoProvider = ({ children }: { children: ReactNode }) => {
     id: string,
     videoData: Omit<Video, "id" | "embedUrl">,
   ) => {
-    const updatedVideos = videos.map((video) =>
-      video.id === id
+    const updatedVideos = (videos || []).map((video) => {
+      if (!video) return video;
+      return video.id === id
         ? { ...video, ...videoData, embedUrl: getEmbedUrl(videoData.url) }
-        : video,
-    );
+        : video;
+    });
     saveVideos(updatedVideos);
   };
 
@@ -114,6 +123,42 @@ export const VideoProvider = ({ children }: { children: ReactNode }) => {
     saveVideos(newOrder);
   };
 
+  const updateNote = (idOrUrl: string, note: string) => {
+    const inputId = extractYoutubeId(idOrUrl);
+    saveVideos((prev) => {
+      let found = false;
+      const updated = (prev || []).map((video) => {
+        if (!video) return video;
+        const videoId = extractYoutubeId(video.url);
+        const isMatch =
+          video.id === idOrUrl ||
+          (inputId && videoId === inputId) ||
+          video.url === idOrUrl;
+
+        if (isMatch) {
+          found = true;
+          return { ...video, note };
+        }
+        return video;
+      });
+
+      if (!found) {
+        return [
+          ...prev,
+          {
+            id: uuidv4(),
+            name: "Video " + (inputId || "Note"),
+            url: idOrUrl,
+            tags: [],
+            note: note,
+            embedUrl: getEmbedUrl(idOrUrl),
+          },
+        ];
+      }
+      return updated;
+    });
+  };
+
   return (
     <VideoContext.Provider
       value={{
@@ -123,6 +168,7 @@ export const VideoProvider = ({ children }: { children: ReactNode }) => {
         deleteVideo,
         reorderVideos,
         getEmbedUrl,
+        updateNote,
       }}
     >
       {children}

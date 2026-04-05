@@ -6,26 +6,21 @@
 
 ---
 
-## 🆕 What's New
-
-- **Slot numbers:** All 4 pinned slots now display a number emoji (1️⃣, 2️⃣, 3️⃣, 4️⃣) for clarity, both when empty and filled.
-- **Flexible pinning:** You can always add a new video to any slot, even if full—just pick the slot number and it will be replaced.
-- **Improved selector:** The slot selector is more visible and user-friendly.
-- **UI/UX polish:** Placeholders, modals, and controls have been visually improved for a cleaner experience.
-
----
-
 ## ✨ Key Features
 
-- **📍 Pinned Video Player**:
-  - 1 main video slot (full display, slot 1️⃣)
-  - 3 secondary slots (slots 2️⃣, 3️⃣, 4️⃣)
-  - All slots show a number emoji and 💿 (CD) icon when empty
-- **🔗 Quick Add & Overwrite**: Paste a YouTube URL, select a slot (1-4), and instantly pin or replace a video.
+- **💾 Persistent Storage**: Everything (videos and notes) is automatically saved in `localStorage`.
+- **🔄 Move, Swap & Edit**:
+  - Instantly move a video to an empty slot or swap positions with another video.
+  - Edit URLs directly in the player footer without re-pinning.
+  - Safety first: Double-check confirmation for video removal.
+- **📝 Persistent Video Notes**:
+  - Add editable notes to any pinned video.
+  - Notes are linked to the specific video, so they persist if you move it between slots.
+  - Automatically synced to your local Library for long-term storage.
+- **📱 Responsive & Interactive**:
+  - **Desktop (XL+)**: Notes reveal with an elegant hover/click animation in a dedicated sidebar.
+  - **Mobile/Tablet**: Notes stay expanded for quick access and better readability.
 - **🌍 Internationalization**: Fully localized interface with English (EN) and Spanish (ES) support.
-- **▶️ Embedded Playback**: Watch videos directly in the app with YouTube embeds.
-- **💾 Persistent Storage**: Your pinned videos are automatically saved and restored.
-- **🎨 Clean UI**: Minimal, distraction-free design focused on video playback.
 
 ---
 
@@ -70,7 +65,7 @@ Floating buttons for essential services:
   - **[Emojis](https://emojis.hoy.today)**: Fast access to emoji library.
   - **Playlist**: You are here!
   - **[Minigame](https://minigame.hoy.today)**: Take a break and play Antipala Pro.
-  - **[Moovimiento](https://moovimiento.com/en)**: Visit Moovimiento.
+  - **[Moovimiento](https://moovimiento.com/en)**: Energize with Moovimiento.
 
 All changes are stored in your browser — no account or login required.
 
