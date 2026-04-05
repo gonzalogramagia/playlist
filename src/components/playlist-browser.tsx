@@ -994,6 +994,11 @@ export function PlaylistBrowser() {
                             ? "Cuando fijes un nuevo video"
                             : "When you pin a new video"}
                         </span>
+                        <span className="block text-[10px] text-neutral-500 font-medium mt-0.5">
+                          {language === "es"
+                            ? "aparecerá aquí"
+                            : "it will appear here"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1139,13 +1144,13 @@ export function PlaylistBrowser() {
               className="bg-neutral-50/50 rounded-2xl border-2 border-dashed border-neutral-300 aspect-video flex items-center justify-center cursor-pointer hover:bg-neutral-100/50 transition-colors group"
             >
               <div className="text-center">
-                <div className="text-neutral-400 text-3xl mb-2 group-hover:scale-110 transition-transform">
+                <div className="text-neutral-400 text-4xl mb-1 group-hover:scale-110 transition-transform">
                   1️⃣{" "}
                   <span role="img" aria-label="cd">
                     💿
                   </span>
                 </div>
-                <span className="block text-neutral-500 text-sm font-semibold">
+                <span className="block text-neutral-500 text-base font-bold">
                   {language === "es"
                     ? "Toca aquí para fijar un video"
                     : "Tap here to pin a video"}
@@ -1188,11 +1193,11 @@ export function PlaylistBrowser() {
                     </>
                   ) : (
                     <div className="text-center px-1">
-                      <span className="text-xl select-none block mb-1">
+                      <span className="text-2xl select-none block mb-0.5">
                         {["2️⃣", "3️⃣", "4️⃣"][slotIndex - 1]}
                       </span>
-                      <span className="text-[10px] text-neutral-400 font-medium">
-                        {language === "es" ? "Vacío" : "Empty"}
+                      <span className="text-[11px] text-neutral-400 font-bold block">
+                        {language === "es" ? "Slot Vacío" : "Empty Slot"}
                       </span>
                     </div>
                   )}
