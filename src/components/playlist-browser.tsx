@@ -233,7 +233,7 @@ export function PlaylistBrowser() {
   );
   const [isMobile, setIsMobile] = useState(false);
   const [pinUrl, setPinUrl] = useState("");
-  const [focusedEditUrl, setFocusedEditUrl] = useState("");
+
   const [pinnedVideos, setPinnedVideos] = useState<
     ({ url: string; name: string } | null)[]
   >([null, null, null, null]);
@@ -306,7 +306,7 @@ export function PlaylistBrowser() {
       `config-pinned-focus-index_playlist`,
       String(focusIndex),
     );
-    setFocusedEditUrl("");
+
   }, [focusIndex, pinnedHydrated]);
 
   const sensors = useSensors(
@@ -558,53 +558,7 @@ export function PlaylistBrowser() {
     executeReplacePin(videoId, pinPosition);
   };
 
-  const handleFocusedUrlSubmit = (slotIndex: number, currentUrl: string) => {
-    // Si el campo está vacío, eliminar el video
-    if (focusedEditUrl.trim() === "") {
-      setPinnedVideos((prev) => {
-        const next = [...prev];
-        next[slotIndex] = null;
-        return next;
-      });
-      setFocusedEditUrl("");
-      return;
-    }
-    if (focusedEditUrl === currentUrl) {
-      setFocusedEditUrl("");
-      return;
-    }
 
-    const videoId = extractYoutubeId(focusedEditUrl);
-    if (!videoId) {
-      toast(
-        language === "es"
-          ? "❌ Link de YouTube inválido"
-          : "❌ Invalid YouTube link",
-        "error"
-      );
-      setFocusedEditUrl("");
-      return;
-    }
-
-    // Check if ALREADY PINNED in a DIFFERENT slot
-    const existingIdx = pinnedVideos.findIndex(
-      (v, i) => i !== slotIndex && v && extractYoutubeId(v.url) === videoId
-    );
-    const slotEmojis = ["1⃣", "2⃣", "3⃣", "4⃣"];
-    if (existingIdx !== -1) {
-      toast(
-        language === "es"
-          ? `⚠️ El video ya está fijado en el slot ${slotEmojis[existingIdx]}`
-          : `⚠️ Video is already pinned in slot ${slotEmojis[existingIdx]}`,
-        "error"
-      );
-      setFocusedEditUrl("");
-      return;
-    }
-
-    executeReplacePin(videoId, slotIndex + 1);
-    setFocusedEditUrl("");
-  };
 
   const handleClickPinned = (index: number) => {
     if (index === 0) return;
@@ -815,12 +769,6 @@ export function PlaylistBrowser() {
                   {/* Botón de eliminar */}
                   <button
                     onClick={() => {
-                      const isEdited =
-                        focusedEditUrl !== "" &&
-                        focusedEditUrl !== focusedVideo.url;
-                      if (isEdited) {
-                        handleFocusedUrlSubmit(focusIndex, focusedVideo.url);
-                      } else {
                         // doble confirmación visual
                         if (!confirmRemovePinned) {
                           setConfirmRemovePinned(1);
@@ -835,12 +783,11 @@ export function PlaylistBrowser() {
                           const next = [...pinnedVideos];
                           next[focusIndex] = null;
                           setPinnedVideos(next);
-                          setFocusedEditUrl("");
+
                           setConfirmRemovePinned(null);
                           if (confirmRemovePinnedTimeout.current)
                             clearTimeout(confirmRemovePinnedTimeout.current);
                         }
-                      }
                     }}
                     className={`p-2 rounded-full transition-all cursor-pointer flex-shrink-0 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700`}
                   >
@@ -852,11 +799,9 @@ export function PlaylistBrowser() {
                   </button>
                   <input
                     type="text"
-                    value={
-                      focusedEditUrl === "" ? focusedVideo.url : focusedEditUrl
-                    }
-                    onChange={(e) => setFocusedEditUrl(e.target.value)}
-                    className="text-gray-600 text-sm flex-1 bg-gray-50 px-3 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all"
+                    readOnly
+                    value={focusedVideo.url}
+                    className="text-gray-500 text-sm flex-1 bg-gray-50 px-3 py-2 rounded border border-gray-200 cursor-default select-all"
                   />
                   {/* Selector para mover/intercambiar el video principal */}
                   <select
@@ -1046,12 +991,6 @@ export function PlaylistBrowser() {
                   {/* Delete button with double-check logic */}
                   <button
                     onClick={() => {
-                      const isEdited =
-                        focusedEditUrl !== "" &&
-                        focusedEditUrl !== focusedVideo.url;
-                      if (isEdited) {
-                        handleFocusedUrlSubmit(focusIndex, focusedVideo.url);
-                      } else {
                         // doble confirmación visual
                         if (!confirmRemovePinned) {
                           setConfirmRemovePinned(1);
@@ -1066,12 +1005,11 @@ export function PlaylistBrowser() {
                           const next = [...pinnedVideos];
                           next[focusIndex] = null;
                           setPinnedVideos(next);
-                          setFocusedEditUrl("");
+
                           setConfirmRemovePinned(null);
                           if (confirmRemovePinnedTimeout.current)
                             clearTimeout(confirmRemovePinnedTimeout.current);
                         }
-                      }
                     }}
                     className={`p-2 rounded-full transition-all cursor-pointer flex-shrink-0 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700`}
                   >
@@ -1084,11 +1022,9 @@ export function PlaylistBrowser() {
 
                   <input
                     type="text"
-                    value={
-                      focusedEditUrl === "" ? focusedVideo.url : focusedEditUrl
-                    }
-                    onChange={(e) => setFocusedEditUrl(e.target.value)}
-                    className="text-gray-600 text-[10px] sm:text-xs flex-1 bg-gray-50 px-2 py-2 rounded border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#6866D6] transition-all truncate"
+                    readOnly
+                    value={focusedVideo.url}
+                    className="text-gray-400 text-[10px] sm:text-xs flex-1 bg-gray-50 px-2 py-2 rounded border border-gray-100 cursor-default truncate select-all"
                   />
 
                   {/* Move/Swap selector */}
