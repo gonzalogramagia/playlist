@@ -16,6 +16,7 @@ import {
   Play,
   Pin,
   ShieldCheck,
+  FileText,
 } from "lucide-react";
 import {
   DndContext,
@@ -81,12 +82,14 @@ function VideoNote({
   updateNote,
   editable,
   language,
+  fullWidth = false,
 }: {
   url: string;
   videos: any[];
   updateNote: (idOrUrl: string, note: string) => void;
   editable: boolean;
   language: "es" | "en";
+  fullWidth?: boolean;
 }) {
   const [isManualExpanded, setIsManualExpanded] = useState(false);
   const [isXl, setIsXl] = useState(typeof window !== "undefined" ? window.innerWidth >= 1280 : true);
@@ -140,16 +143,19 @@ function VideoNote({
       return (
         <button
           onClick={handleExpand}
-          className="w-10 h-10 bg-white rounded-xl border-2 border-gray-100 shadow-sm flex items-center justify-center text-gray-400 hover:text-[#6866D6] hover:border-[#6866D6]/30 hover:shadow-md transition-all group shrink-0 cursor-pointer pointer-events-auto"
+          className="w-12 h-12 bg-white rounded-xl border-2 border-gray-100 shadow-sm flex items-center justify-center text-gray-400 hover:text-[#6866D6] hover:border-[#6866D6]/30 hover:shadow-md transition-all group shrink-0 cursor-pointer pointer-events-auto"
           title={language === "es" ? "Escribir nota" : "Write note"}
         >
-          <Pencil className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <div className="flex items-center gap-0.5 group-hover:scale-110 transition-transform">
+            <FileText className="w-4 h-4 opacity-70" />
+            <Pencil className="w-4 h-4" />
+          </div>
         </button>
       );
     }
 
     return (
-      <div className="w-full xl:w-44 2xl:w-56 h-48 xl:h-64 2xl:h-80 bg-white rounded-2xl border-2 border-gray-100 shadow-sm p-4 flex flex-col gap-2 overflow-hidden animate-in fade-in zoom-in slide-in-from-right-4 duration-300">
+      <div className={`${fullWidth ? "w-full h-56" : "w-full xl:w-44 2xl:w-56 h-48 xl:h-64 2xl:h-80"} bg-white rounded-2xl border-2 border-gray-100 shadow-sm p-4 flex flex-col gap-2 overflow-hidden animate-in fade-in zoom-in ${fullWidth ? "slide-in-from-bottom-4" : "slide-in-from-right-4"} duration-300`}>
         <h4 className="font-bold text-gray-700 text-[11px] uppercase tracking-wider flex items-center justify-between gap-1.5 opacity-60">
           <div className="flex items-center gap-1.5">
             <Pencil className="w-3 h-3" />
@@ -730,30 +736,8 @@ export function PlaylistBrowser() {
         <div className="hidden xl:flex items-stretch gap-6 relative">
           {/* Slot 1 Area */}
           <div className="flex-1 relative">
-            {/* [DESKTOP] Slot 1 Note - Positioned LEFT SIDEBAR (tightly attached to video) */}
-            {focusedVideo && (
-              <div className="hidden xl:block absolute right-full mr-1 top-0 z-40 pointer-events-auto cursor-pointer">
-                <VideoNote
-                  url={focusedVideo.url}
-                  videos={videos}
-                  updateNote={updateNote}
-                  editable={true}
-                  language={language}
-                />
-              </div>
-            )}
             {focusedVideo ? (
               <div className="bg-white border-2 border-gray-200 overflow-hidden rounded-2xl shadow-lg">
-                {/* [MD/LG Desktop] Inline note if not XL sidebar */}
-                <div className="xl:hidden p-3 bg-gray-50 border-b border-gray-100 h-32">
-                   <VideoNote
-                    url={focusedVideo.url}
-                    videos={videos}
-                    updateNote={updateNote}
-                    editable={true}
-                    language={language}
-                  />
-                </div>
                 <div className="h-96 bg-gray-100 relative">
                   <iframe
                     width="100%"
@@ -953,6 +937,20 @@ export function PlaylistBrowser() {
           </div>
         </div>
 
+        {/* [DESKTOP] Slot 1 Note - Positioned BOTTOM (Full width spanning across the entire grid) */}
+        {focusedVideo && (
+          <div className="hidden xl:block mt-6">
+            <VideoNote
+              url={focusedVideo.url}
+              videos={videos}
+              updateNote={updateNote}
+              editable={true}
+              language={language}
+              fullWidth={true}
+            />
+          </div>
+        )}
+
         {/* Mobile & Tablet & Small Desktop: Pinned Videos Layout */}
         <div className="xl:hidden space-y-4">
           {focusedVideo ? (
@@ -976,7 +974,7 @@ export function PlaylistBrowser() {
               </div>
               
               {/* Mobile Note - Slot 1: Full width and taller */}
-              <div className="p-3 bg-gray-50/50 border-b border-gray-100 h-48">
+              <div className="p-3 bg-gray-50/50 border-b border-gray-100 h-56">
                 <VideoNote
                   url={focusedVideo.url}
                   videos={videos}

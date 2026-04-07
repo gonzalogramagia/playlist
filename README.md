@@ -9,9 +9,8 @@
 ## ✨ Key Features
 
 - **💾 Persistent Storage**: Everything (videos and notes) is automatically saved in `localStorage`.
-- **🔄 Move, Swap & Edit**:
+- **🔄 Move, Swap & Clean**:
   - Instantly move a video to an empty slot or swap positions with another video.
-  - Edit URLs directly in the player footer without re-pinning.
   - Safety first: Double-check confirmation for video removal.
 - **📝 Persistent Video Notes**:
   - Add editable notes to any pinned video.
