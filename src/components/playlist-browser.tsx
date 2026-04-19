@@ -17,6 +17,8 @@ import {
   Pin,
   ShieldCheck,
   FileText,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import {
   DndContext,
@@ -267,23 +269,19 @@ export function PlaylistBrowser() {
       try {
         let parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          // Normaliza y filtra duplicados por ID
+          // Normaliza y filtra duplicados por ID manteniendo posiciones
           const seen = new Set();
-          parsed = parsed
-            .map((v: any) =>
-              v && v.url ? { ...v, url: normalizeYoutubeUrl(v.url) } : null,
-            )
-            .filter((v: any) => {
-              if (!v) return false;
-              const id = extractYoutubeId(v.url);
-              if (!id || seen.has(id)) return false;
-              seen.add(id);
-              return true;
-            });
-          // Asegura 4 slots
           const arr = [null, null, null, null];
+          
           parsed.slice(0, 4).forEach((v: any, i: number) => {
-            arr[i] = v;
+            if (v && v.url) {
+              const normalizedUrl = normalizeYoutubeUrl(v.url);
+              const id = extractYoutubeId(normalizedUrl);
+              if (id && !seen.has(id)) {
+                seen.add(id);
+                arr[i] = { ...v, url: normalizedUrl };
+              }
+            }
           });
           setPinnedVideos(arr);
         } else {
@@ -576,6 +574,7 @@ export function PlaylistBrowser() {
       return next;
     });
     setFocusIndex(0);
+    toast(t("toastVideoSwapped"), "success", { className: "left-1/2 md:left-[54.5%]" });
   };
 
   const handleClickPlaceholder = (slotIndex: number = 0) => {
@@ -890,8 +889,63 @@ export function PlaylistBrowser() {
                         </div>
                       </div>
                       
-                      {/* [DESKTOP] Preview note - Positioned RIGHT SIDEBAR (outside layout) */}
-                      <div className="hidden xl:block absolute left-full ml-4 top-0 bottom-0 w-32 2xl:w-44 py-0.5 z-20">
+                      {/* Move controls (hover) - OUTSIDE grid */}
+                      <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 flex flex-col items-stretch gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (slotIndex > 1) {
+                              setPinnedVideos((prev) => {
+                                const next = [...prev];
+                                const temp = next[slotIndex];
+                                next[slotIndex] = next[slotIndex - 1];
+                                next[slotIndex - 1] = temp;
+                                return next;
+                              });
+                              toast(t("toastVideoMoved"), "success");
+                            }
+                          }}
+                          disabled={slotIndex === 1}
+                          className={`p-2 rounded-xl bg-white shadow-md hover:shadow-lg text-[#6866D6] hover:bg-gray-50 transition-all cursor-pointer flex items-center justify-center ${slotIndex === 1 ? "opacity-20 cursor-not-allowed" : "hover:scale-105"}`}
+                          title={language === "es" ? "Subir" : "Move Up"}
+                        >
+                          <ChevronUp size={24} />
+                        </button>
+
+                        <div className="bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-2xl shadow-xl whitespace-nowrap transform hover:scale-105 transition-transform cursor-pointer group/btn flex items-center justify-center"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               handleClickPinned(slotIndex);
+                             }}>
+                           <span className="text-xl font-black text-[#6866D6] flex items-center gap-2">
+                             1️⃣ <span className="text-sm opacity-60">🔄</span> {["2️⃣", "3️⃣", "4️⃣"][slotIndex - 1]}
+                           </span>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (slotIndex < 3) {
+                              setPinnedVideos((prev) => {
+                                const next = [...prev];
+                                const temp = next[slotIndex];
+                                next[slotIndex] = next[slotIndex + 1];
+                                next[slotIndex + 1] = temp;
+                                return next;
+                              });
+                              toast(t("toastVideoMoved"), "success");
+                            }
+                          }}
+                          disabled={slotIndex === 3}
+                          className={`p-2 rounded-xl bg-white shadow-md hover:shadow-lg text-[#6866D6] hover:bg-gray-50 transition-all cursor-pointer flex items-center justify-center ${slotIndex === 3 ? "opacity-20 cursor-not-allowed" : "hover:scale-105"}`}
+                          title={language === "es" ? "Bajar" : "Move Down"}
+                        >
+                          <ChevronDown size={24} />
+                        </button>
+                      </div>
+
+                      {/* [DESKTOP] Preview note - Mutually exclusive with hover controls */}
+                      <div className="hidden xl:block absolute left-full ml-3 top-0 bottom-0 w-48 2xl:w-64 py-0.5 z-20 transition-opacity group-hover:opacity-0 group-hover:pointer-events-none">
                         <VideoNote
                           url={slotVideo.url}
                           videos={videos}

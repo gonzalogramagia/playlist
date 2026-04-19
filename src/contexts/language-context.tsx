@@ -77,6 +77,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       slot: "Slot",
       swap: "Intercambiar",
       empty: "Vacío",
+      toastVideoMoved: "Video movido de posición",
+      toastVideoSwapped: "Videos intercambiados correctamente",
     },
     en: {
       ariaHome: "Go to Hoy & Today",
@@ -113,6 +115,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       slot: "Slot",
       swap: "Swap",
       empty: "Empty",
+      toastVideoMoved: "Video position moved",
+      toastVideoSwapped: "Videos swapped successfully",
     },
   };
 

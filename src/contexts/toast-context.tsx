@@ -2,17 +2,17 @@ import { createContext, useContext, useState, ReactNode, useCallback } from 'rea
 import { Toast, ToastType } from '../components/toast';
 
 interface ToastContextType {
-    toast: (message: string, type?: ToastType) => void;
+    toast: (message: string, type?: ToastType, options?: { className?: string }) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-    const [activeToast, setActiveToast] = useState<{ id: number; message: string; type: ToastType } | null>(null);
+    const [activeToast, setActiveToast] = useState<{ id: number; message: string; type: ToastType; className?: string } | null>(null);
 
-    const toast = useCallback((message: string, type: ToastType = 'success') => {
+    const toast = useCallback((message: string, type: ToastType = 'success', options?: { className?: string }) => {
         const id = Date.now();
-        setActiveToast({ id, message, type });
+        setActiveToast({ id, message, type, className: options?.className });
 
         // Auto dismiss after 3 seconds
         setTimeout(() => {
@@ -22,7 +22,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 }
                 return current;
             });
-        }, 3000);
+        }, 2200); // Sigo tu preferencia de que sea más rápido si quieres, pero mantengo 2.2s
     }, []);
 
     return (
@@ -33,6 +33,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     key={activeToast.id}
                     message={activeToast.message}
                     type={activeToast.type}
+                    className={activeToast.className}
                     onClose={() => setActiveToast(null)}
                 />
             )}
